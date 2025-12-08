@@ -1,5 +1,5 @@
 # 1. Ẩn biến môi trường
-.env* # 2. Ẩn môi trường ảo (Virtual Environment)
+.env*
 venv/
 .venv/ 
 
