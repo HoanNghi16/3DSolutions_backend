@@ -1,0 +1,11 @@
+# 1. Ẩn biến môi trường
+.env* # 2. Ẩn môi trường ảo (Virtual Environment)
+venv/
+.venv/ 
+
+# 3. Ẩn file Database mặc định của Django
+db.sqlite3 
+
+# 4. Ẩn Python/IDE artifacts
+*.pyc
+__pycache__/
