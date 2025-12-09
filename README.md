@@ -16,24 +16,6 @@ Hệ thống cung cấp API cho frontend/web/app với kiến trúc tách biệt
 
 ---
 
-## Cấu trúc thư mục
-project/
-│
-├── api/
-│ ├── auth/
-│ ├── product/
-│ └── ...
-│
-├── core/ # Cấu hình chính của Django
-│ ├── settings.py # Cấu hình database, app, middleware
-│ ├── urls.py # Khai báo route
-│ └── wsgi.py
-│
-├── venv/ # Virtual environment (.gitignore)
-│
-├── manage.py # File điều khiển Django
-└── README.md
-
 ### 1. Tạo virtual environment
 
 ```bash
