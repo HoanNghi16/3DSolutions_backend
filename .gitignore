@@ -10,3 +10,5 @@ db.sqlite3
 *.pyc
 __pycache__/
 .idea/
+*.drawio
+*.xml
