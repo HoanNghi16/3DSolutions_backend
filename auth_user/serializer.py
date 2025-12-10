@@ -20,10 +20,14 @@ class UsersSerializer:
         phone = self.valid_phone()
         date_of_birth = self.valid_date_of_birth()
         if name and email and phone and date_of_birth:
-            self.valid_data = {'email': email, 'name':name, 'date_of_birth': date_of_birth, 'password': self.password}
+            self.valid_data = {'email': email,
+                               'name':name,
+                               'date_of_birth': date_of_birth,
+                               'password': self.password,
+                               'phone': phone}
             return True
         else:
-            self._error = 'Invalid data'
+            self._error = 'Invalid data ' + f'name : {name}, email : {email}, phone : {phone}, date_of_birth: {date_of_birth}'
             return False
 
     def valid_date_of_birth(self):
@@ -45,7 +49,7 @@ class UsersSerializer:
 
     def valid_name(self):
         pattern = r'^([A-ZÁ-Ỹ]{1}[a-zá-ỹ]*)+(\s[A-ZÁ-Ỹ]{1}[a-zá-ỹ]*)+$'
-        name = str(self.name)
+        name = self.name
         if(re.fullmatch(pattern, name)):
             return name
         else: return False
@@ -57,14 +61,32 @@ class UsersSerializer:
         else:
             return self.email
 
+
+    def check_exist(self):
+        valid_data = self.valid_data
+        users = Users.objects.filter(name= valid_data.get('name')).filter(date_of_birth= valid_data.get('date_of_birth')).filter(phone= valid_data.get('phone'))
+        if(users):
+            return users
+        else:
+            return False
+
     def create(self):
-        valid_data = self.valid_data()
-        profile_data = {'name': valid_data['name'],
-                        'phone': valid_data['phone'],
-                        'date_of_birth': valid_data['date_of_birth']}
-        account_data = {'email': valid_data['email'],
-                        'password': valid_data['password']}
-        profile = Users.objects.create(**profile_data)
+        valid_data = self.valid_data
+        profile_data = {'name': valid_data.get('name'),
+                        'phone': valid_data.get('phone'),
+                        'date_of_birth': valid_data.get('date_of_birth')}
+        account_data = {'email': valid_data.get('email'),
+                        'password': valid_data.get('password')}
+
+        check_exist = self.check_exist()
+        if not check_exist:
+            profile = Users.objects.create(**profile_data)
+        else:
+            profile = check_exist
+
         useraccount = UserAccounts.objects.create_user(profile = profile, **account_data)
 
         return useraccount
+
+    def __str__(self):
+        return str(self.valid_data)
