@@ -10,6 +10,8 @@ class getProducts(APIView):
     def get(self, request):
         try:
             products_list = Products.objects.all()
+            if len(products_list) == 0:
+                return Response(data = str(None), status = status.HTTP_200_OK)
             product_images = {}
             for product in products_list:
                 product_images[product.id] = ProductImages.objects.filter(id=product.id)[0].path
