@@ -48,9 +48,9 @@ class UsersSerializer:
             return False
 
     def valid_name(self):
-        pattern = r'^([A-ZÁ-Ỹ]{1}[a-zá-ỹ]*)+(\s[A-ZÁ-Ỹ]{1}[a-zá-ỹ]*)+$'
+        pattern = r'^[A-ZÀ-ỸĐ][a-zà-ỹđ]*\s([A-ZÀ-ỸĐ][a-zà-ỹđ]*)(\s[A-ZÀ-ỸĐ][a-zà-ỹđ]*)*$'
         name = self.name
-        if(re.fullmatch(pattern, name)):
+        if(re.match(pattern, name)):
             return name
         else: return False
 
@@ -66,27 +66,23 @@ class UsersSerializer:
         valid_data = self.valid_data
         users = Users.objects.filter(name= valid_data.get('name')).filter(date_of_birth= valid_data.get('date_of_birth')).filter(phone= valid_data.get('phone'))
         if(users):
-            return users
+            return True
         else:
             return False
 
     def create(self):
-        valid_data = self.valid_data
-        profile_data = {'name': valid_data.get('name'),
-                        'phone': valid_data.get('phone'),
-                        'date_of_birth': valid_data.get('date_of_birth')}
-        account_data = {'email': valid_data.get('email'),
-                        'password': valid_data.get('password')}
+        if(self.is_valid()):
+            valid_data = self.valid_data
+            if (self.check_exist()):
+                profile =  Users.objects.get(name= valid_data.get('name'), phone = valid_data.get('phone'), date_of_birth= valid_data.get('date_of_birth'))
+            else:
+                profile_data = {"name": valid_data.get('name'), "phone": valid_data.get('phone'), "date_of_birth": valid_data.get('date_of_birth')}
+                account_data = {"email": valid_data.get('email'), "password": valid_data.get('password')}
 
-        check_exist = self.check_exist()
-        if not check_exist:
-            profile = Users.objects.create(**profile_data)
-        else:
-            profile = check_exist
-
-        useraccount = UserAccounts.objects.create_user(profile = profile, **account_data)
-
-        return useraccount
-
+                profile = Users.objects.create(**profile_data)
+            useraccount = UserAccounts.objects.create_user(profile = profile, **account_data)
+            return useraccount
+        self._error = 'Invalid data'
+        return None
     def __str__(self):
         return str(self.valid_data)

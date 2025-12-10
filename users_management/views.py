@@ -34,8 +34,9 @@ class LoginView(APIView):
         if not user_authenticated:
             return Response(data = 'Invalid credentials ' + f'{user_authenticated}', status=status.HTTP_401_UNAUTHORIZED)
         try:
-            token_data = get_token_for_user(user_authenticated)
-            return Response( token_data, status=status.HTTP_200_OK)
+            user_get_token = UserAccounts.objects.get(email=data.get('email'))
+            token_data = get_token_for_user(user_get_token)
+            return Response( str(token_data), status=status.HTTP_200_OK)
         except Exception as e:
             return Response(data = 'Token Error' + f'{e.args}' + f'{user_authenticated}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

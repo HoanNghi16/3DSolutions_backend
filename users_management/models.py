@@ -37,15 +37,25 @@ class UserAccountManager(BaseUserManager):
         user.save(using = self._db)
         return user
 
+    def create_superuser(self, profile, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(profile, email, password, **extra_fields)
 
 class UserAccounts(AbstractBaseUser, PermissionsMixin):
-    profile = OneToOneField(Users, on_delete=models.CASCADE, primary_key=True, related_name='user_account')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile = OneToOneField(Users, on_delete=models.CASCADE, related_name='user_account')
     email = models.EmailField(unique=True)
 
     is_staff = models.BooleanField(default=False)
-
-    groups = models.ManyToManyField('auth.Group', related_name='user_accounts')
-    user_permissions = models.ManyToManyField('auth.Permission', related_name='user_accounts')
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['profile']
