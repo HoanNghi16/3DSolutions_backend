@@ -17,6 +17,9 @@ class Products(models.Model):
     quantity = models.PositiveIntegerField()
     material = models.ForeignKey(Materials, related_name='products_material', on_delete=models.CASCADE)
 
+    def __str__(self):
+        return str({ id : self.id,'name' : self.name, 'description': self.description, 'unit_price': self.unit_price})
+
 class ProductImages(models.Model):
     product = models.ForeignKey(Products, on_delete=models.CASCADE)
     fileID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
