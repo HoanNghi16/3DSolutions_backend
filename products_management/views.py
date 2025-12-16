@@ -9,17 +9,18 @@ from rest_framework import status, request
 # Create your views here.
 class getProducts(APIView):
     def get(self, request):
-        #try:
-            products_list = list(Products.objects.all())
-            return JsonResponse(data= {'Products': {products_list}})
-        #     if len(products_list) == 0:
-        #         return Response(data = str(None), status = status.HTTP_200_OK)
-        #     product_images = {}
-        #     for product in products_list:
-        #         product_images[product.id] = ProductImages.objects.filter(product_id=product.id)
-        #     return Response(data = f'products: {products_list}, images: {product_images}', status = status.HTTP_200_OK)
-         #except Exception as e:
-            return Response(data = f'error: {e}', status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            products_list = list(Products.objects.all().values())
+            if (len(products_list) != 0):
+                if ProductImages.objects.all().count() != 0:
+                    for product in products_list:
+                        image = ProductImages.objects.get(product = product.id)
+                        product['image'] = image.path
+                return JsonResponse(products_list, safe=False)
+            else:
+                return JsonResponse(products_list, status = status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class getDetails(APIView):
     def get(self, request):
         product_id = request.GET.get('id')
