@@ -28,7 +28,7 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['https://3d-solutions.vercel.app/', '127.0.0.1']
+    ALLOWED_HOSTS = ['https://3d-solutions.vercel.app/', '127.0.0.1', 'railway.app']
 
 
 # Application definition

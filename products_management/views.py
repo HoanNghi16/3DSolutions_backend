@@ -1,40 +1,22 @@
-from django.http import JsonResponse
-from django.shortcuts import render
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Products, ProductImages, Materials
-from rest_framework import status, request
+from .models import Products, Materials
+from .pagination import ProductsPagination
+from .serializer import ProductsSerializer, ProductDetailsSerializer, MaterialsSerializer
 
 
 # Create your views here.
-class getProducts(APIView):
-    def get(self, request):
-        try:
-            products_list = list(Products.objects.all().values())
-            if (len(products_list) != 0):
-                if ProductImages.objects.all().count() != 0:
-                    for product in products_list:
-                        image = ProductImages.objects.get(product = product.id)
-                        product['image'] = image.path
-                return JsonResponse(products_list, safe=False)
-            else:
-                return JsonResponse(products_list, status = status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-class getDetails(APIView):
-    def get(self, request):
-        product_id = request.GET.get('id')
-        product = Products.objects.get(id=product_id)
-        images = ProductImages.objects.filter(product=product)
-        return Response(data = f'product: {product}, images: {images}', status = status.HTTP_200_OK)
-class getMaterials(APIView):
-    def get(self, request):
-        product_id = request.GET.get('id')
-        if not product_id:
-            materials_list = Materials.objects.all()
-            return Response(data = f'materials: {materials_list}', status = status.HTTP_200_OK)
-        try:
-            material = Materials.objects.get(id=product_id)
-            return Response(data = f'material: {material}', status = status.HTTP_200_OK)
-        except Exception as e:
-            return Response(data = f'error: {e}', status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+class getProducts(ListAPIView):
+    queryset = Products.objects.all().order_by("-id")
+    pagination_class = ProductsPagination
+    serializer_class = ProductsSerializer
+
+class getDetails(RetrieveAPIView):
+    queryset = Products.objects.all()
+    serializer_class = ProductDetailsSerializer
+    lookup_field = 'id'
+
+class getMaterials(ListAPIView):
+    queryset = Materials.objects.all().order_by("-id")
+    serializer_class = MaterialsSerializer
