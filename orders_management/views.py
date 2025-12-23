@@ -6,5 +6,4 @@ from orders_management.models import OrderHeaders
 
 # Create your views here.
 
-class OdersView(ListAPIView):
-    queryset = OrderHeaders.objects.all()
+class OdersView(APIView):
