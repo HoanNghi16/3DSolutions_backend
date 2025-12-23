@@ -7,16 +7,16 @@ from .serializer import ProductsSerializer, ProductDetailsSerializer, MaterialsS
 
 
 # Create your views here.
-class getProducts(ListAPIView):
+class ProductsView(ListAPIView):
     queryset = Products.objects.all().order_by("-id")
     pagination_class = ProductsPagination
     serializer_class = ProductsSerializer
 
-class getDetails(RetrieveAPIView):
+class DetailsView(RetrieveAPIView):
     queryset = Products.objects.all()
     serializer_class = ProductDetailsSerializer
     lookup_field = 'id'
 
-class getMaterials(ListAPIView):
+class MaterialsView(ListAPIView):
     queryset = Materials.objects.all().order_by("-id")
     serializer_class = MaterialsSerializer
