@@ -23,8 +23,6 @@ class Users(models.Model):
     def get_date_of_birth(self):
         return self.date_of_birth
 
-    def __str__(self):
-        return str({ 'name':{self.name}, 'date_of_birth': {self.date_of_birth}, 'phone': {self.phone}})
 
 
 class UserAccountManager(BaseUserManager):

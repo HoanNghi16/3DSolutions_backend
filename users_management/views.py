@@ -1,13 +1,13 @@
 from rest_framework import status
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializer import UsersSerializer
+from .serializer import UsersSerializer, UserInformationsSerializer
 from django.contrib.auth import authenticate
 from .models import UserAccounts, Users
 
-class RegistraionView(APIView):
-
+class RegistrationView(APIView):
     def post(self, request):
         serializer = UsersSerializer(data=request.data)
         if not serializer.is_valid():
@@ -18,9 +18,7 @@ class RegistraionView(APIView):
         except Exception as e:
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 def get_token_for_user(user):
-    print(user)
     refresh = RefreshToken.for_user(user)
     return {
         'refresh': str(refresh),
@@ -32,7 +30,7 @@ class LoginView(APIView):
         data = request.data
         user_authenticated = authenticate(request,email=data.get('email'), password=data.get('password'))
         if not user_authenticated:
-            return Response(data = 'Invalid credentials ' + f'{user_authenticated}', status=status.HTTP_401_UNAUTHORIZED)
+            return Response(data = 'Invalid credentials ', status=status.HTTP_401_UNAUTHORIZED)
         try:
             user_get_token = UserAccounts.objects.get(email=data.get('email'))
             token_data = get_token_for_user(user_get_token)
@@ -42,3 +40,8 @@ class LoginView(APIView):
 
     def get(self, request):
         return Response(data = f'{Users.objects.all()}) ' + f'{UserAccounts.objects.all()}', status=status.HTTP_200_OK)
+
+class UserInformationView(RetrieveAPIView):
+    queryset = Users.objects.all()
+    serializer_class = UserInformationsSerializer
+    lookup_field = 'user_id'

@@ -2,6 +2,7 @@ from time import strptime
 from datetime import date, datetime
 from .models import Users, UserAccounts
 import re
+from rest_framework import serializers
 
 class UsersSerializer:
     def __init__(self, data):
@@ -86,3 +87,8 @@ class UsersSerializer:
         return None
     def __str__(self):
         return str(self.valid_data)
+
+class UserInformationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = '__all__'
