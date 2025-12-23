@@ -23,4 +23,4 @@ class OrderDetails(models.Model):
     quantity = models.PositiveIntegerField()
 
     def __str__(self):
-        return f'header_id: {self.header.id}, detail_id: {self.id}, product_id: {self.product.id}, quantity: {self.quantity}, sub_total: {self.sub_total}'
+        return f'header_id: {self.header.id}, detail_id: {self.id}, product_id: {self.product.id}, quantity: {self.quantity}'
