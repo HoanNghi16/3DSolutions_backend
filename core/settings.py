@@ -28,8 +28,21 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['https://3d-solutions.vercel.app/', '127.0.0.1', 'railway.app']
+    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', '.railway.app']
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://3d-solutions.vercel.app",
+]
+if DEBUG:
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
 
 # Application definition
 
@@ -65,8 +78,28 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://3d-solutions.vercel.app",
 ]
-
+CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'core.urls'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'users_management.authenticate.CookieAuthenticateJWT',
+    ),
+}
+
+# settings.py
+
+
+# Tin tưởng domain frontend để xử lý CSRF
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Quan trọng khi chạy localhost khác port
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 TEMPLATES = [
     {

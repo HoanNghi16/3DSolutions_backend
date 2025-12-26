@@ -92,3 +92,9 @@ class UserInformationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = '__all__'
+
+class UserAccountsSerializer(serializers.ModelSerializer):
+    profile = UserInformationsSerializer(read_only=True)
+    class Meta:
+        model = UserAccounts
+        fields = '__all__'
