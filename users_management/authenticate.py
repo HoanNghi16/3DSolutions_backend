@@ -13,7 +13,7 @@ class CookieAuthenticateJWT(BaseAuthentication):
             return None
         try:
             token = AccessToken(access)
-            id = token['user_id']
+            id = token['id']
             Account = UserAccounts.objects.get(id = id)
         except Exception:
             raise AuthenticationFailed('Fail')

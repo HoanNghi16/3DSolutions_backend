@@ -7,10 +7,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .authenticate import CookieAuthenticateJWT
-from .serializer import UsersSerializer, UserInformationsSerializer, UserAccountsSerializer
+from .serializer import UsersSerializer, UserAccountsSerializer
 from django.contrib.auth import authenticate
-from .models import UserAccounts, Users
-from core import settings
+from .models import UserAccounts
 from rest_framework.permissions import AllowAny
 
 class RegistrationView(APIView):
