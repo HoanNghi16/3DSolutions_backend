@@ -21,7 +21,8 @@ class Products(models.Model):
         return str({ id : self.id,'name' : self.name, 'description': self.description, 'unit_price': self.unit_price})
 
 class ProductImages(models.Model):
-    product = models.ForeignKey(Products, on_delete=models.CASCADE)
+    product = models.ForeignKey(Products, on_delete=models.CASCADE, related_name='images')
     fileID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    path = models.FilePathField(unique=True)
+    path = models.CharField(unique=True)
+    is_thumbnail = models.BooleanField(default=False)
     type = models.CharField(max_length=100)

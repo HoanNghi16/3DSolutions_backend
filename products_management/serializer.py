@@ -4,12 +4,21 @@ from .models import Products, ProductImages, Materials
 class ProductImagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImages
-        fields = ['id', 'path']
+        fields = ['fileID', 'path', 'is_thumbnail']
 
 class ProductsSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.SerializerMethodField()
     class Meta:
         model = Products
-        fields = ["id", "name", "unit_price", "quantity"]
+        fields = ["id", "name", "unit_price", "quantity", "thumbnail"]
+
+    def get_thumbnail(self, obj):
+        thumbnail = obj.images.filter(is_thumbnail=True).first()
+        if thumbnail:
+            return thumbnail.path
+        return None
+
+
 
 class MaterialsSerializer(serializers.ModelSerializer):
     class Meta:

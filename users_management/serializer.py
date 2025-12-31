@@ -97,4 +97,4 @@ class UserAccountsSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)
     class Meta:
         model = UserAccounts
-        fields = '__all__'
+        fields = ['id', 'avt', 'email', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff']
