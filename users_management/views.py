@@ -1,3 +1,4 @@
+from pyexpat.errors import messages
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -16,7 +17,7 @@ class RegistrationView(APIView):
     def post(self, request):
         serializer = UsersSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(data = serializer._error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer._error, status=status.HTTP_409_CONFLICT)
         try:
             serializer.create()
             return Response(data = f'serializer created', status=status.HTTP_201_CREATED)
@@ -31,7 +32,7 @@ def get_token_for_user(user):
     }
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
-    authentication_classes = []  # 🔥 QUAN TRỌNG
+    authentication_classes = []
     permission_classes = [AllowAny]
     def post(self, request):
         data = request.data
@@ -41,23 +42,7 @@ class LoginView(APIView):
         try:
             user_get_token = UserAccounts.objects.get(email=data.get('email'))
             token_data = get_token_for_user(user_get_token)
-            response = Response({'message': 'success'}, status = status.HTTP_200_OK)
-            #Set cookies cho login
-            response.set_cookie(key='access',
-                                value=token_data['access'],
-                                httponly=True,
-                                secure = False,
-                                samesite = 'Lax',
-                                max_age = 60*15,
-                                path='/') #15 mins
-
-            response.set_cookie(key='refresh',
-                                value=token_data['refresh'],
-                                httponly=True,
-                                secure = False,
-                                samesite='Lax',
-                                max_age= 60*60*24*7, #1 week
-                                path='/')
+            response = Response({'access': token_data['access'], 'refresh': token_data['refresh']}, status = status.HTTP_200_OK)
             return response
         except Exception as e:
             return Response(data = 'Token Error' + f'{e.args}' + f'{user_authenticated}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -66,6 +51,18 @@ class UserInformationView(RetrieveAPIView):
     serializer_class = UserAccountsSerializer
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAuthenticated]
-
     def get_object(self):
         return self.request.user
+
+class LogoutView(APIView):
+    def post(self, request):
+        try:
+            refresh = request.headers.get('refresh')
+            token = RefreshToken(refresh)
+            #add token to blacklist (delete refresh token)
+            token.blacklist()
+            response = Response({'message': 'success'}, status=status.HTTP_200_OK)
+            response.delete_cookie(key = 'access')
+            return response
+        except Exception as e:
+            return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)

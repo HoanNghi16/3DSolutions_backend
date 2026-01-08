@@ -28,7 +28,6 @@ class UsersSerializer:
                                'phone': phone}
             return True
         else:
-            self._error = 'Invalid data ' + f'name : {name}, email : {email}, phone : {phone}, date_of_birth: {date_of_birth}'
             return False
 
     def valid_date_of_birth(self):
@@ -58,6 +57,7 @@ class UsersSerializer:
     def valid_email(self):
         users = UserAccounts.objects.filter(email=self.email)
         if(users.exists()):
+            self._error  = "Account already exists"
             return False
         else:
             return self.email

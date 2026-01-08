@@ -49,7 +49,7 @@ class UserAccounts(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile = OneToOneField(Users, on_delete=models.CASCADE, related_name='user_account')
     email = models.EmailField(unique=True)
-    avt = models.CharField(max_length=100, default = "/user.png")
+    avt = models.CharField(max_length=200, default = "/user.png")
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
