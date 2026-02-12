@@ -9,7 +9,9 @@ class CookieAuthenticateJWT(BaseAuthentication):
     def authenticate(self, request):
         access = request.headers.get('Authorization')
         if not access:
-            return None
+            access = request.COOKIES.get('access')
+            if not access:
+                return None
         try:
             token = AccessToken(access)
             id = token['id']

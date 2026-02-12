@@ -1,6 +1,11 @@
 import uuid
 from django.db import models
 
+class Categories(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='children', null=True)
+
 class Materials(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -16,6 +21,8 @@ class Products(models.Model):
     unit_price = models.FloatField()
     quantity = models.PositiveIntegerField()
     material = models.ForeignKey(Materials, related_name='products_material', on_delete=models.CASCADE)
+    rate = models.FloatField(default =0)
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE, related_name='products_category', null=True)
 
     def __str__(self):
         return str({ id : self.id,'name' : self.name, 'description': self.description, 'unit_price': self.unit_price})
@@ -23,6 +30,8 @@ class Products(models.Model):
 class ProductImages(models.Model):
     product = models.ForeignKey(Products, on_delete=models.CASCADE, related_name='images')
     fileID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    path = models.CharField(unique=True)
+    path = models.CharField(unique=False)
     is_thumbnail = models.BooleanField(default=False)
     type = models.CharField(max_length=100)
+
+

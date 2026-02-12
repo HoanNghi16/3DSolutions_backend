@@ -20,9 +20,10 @@ class UsersSerializer:
         email = self.valid_email()
         phone = self.valid_phone()
         date_of_birth = self.valid_date_of_birth()
+
         if name and email and phone and date_of_birth:
             self.valid_data = {'email': email,
-                               'name':name,
+                               'name': name,
                                'date_of_birth': date_of_birth,
                                'password': self.password,
                                'phone': phone}
@@ -34,7 +35,7 @@ class UsersSerializer:
         format_date = '%d/%m/%Y'
         date_of_birth = datetime.strptime(self.date_of_birth, format_date).date()
         today = date.today()
-        if(today.year - date_of_birth.year < 18):
+        if(today.year - date_of_birth.year < 12):
             return False
         else:
             return date_of_birth
@@ -43,6 +44,8 @@ class UsersSerializer:
         pattern = r'^0{1}[3-9]{1}\d{8,9}$'
         phone = str(self.phone)
         if(re.fullmatch(pattern, phone)):
+            if (Users.objects.filter(phone=phone).exists()):
+                return False
             return phone
         else:
             return False

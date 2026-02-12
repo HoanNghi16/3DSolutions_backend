@@ -11,7 +11,7 @@ class OrderHeaders(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     total = models.FloatField()
     date = models.DateTimeField(auto_now_add=True)
-    pay = models.BooleanField(default=False)
+    pay_status = models.BooleanField(default=False)
     method = models.IntegerField(default=0)
 
     def __str__(self):

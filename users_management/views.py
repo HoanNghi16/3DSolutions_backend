@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+
+from carts_management.models import CartHeaders
 from .authenticate import CookieAuthenticateJWT
 from .serializer import UsersSerializer, UserAccountsSerializer
 from django.contrib.auth import authenticate
@@ -16,10 +18,13 @@ from rest_framework.permissions import AllowAny
 class RegistrationView(APIView):
     def post(self, request):
         serializer = UsersSerializer(data=request.data)
+        print(serializer.is_valid())
         if not serializer.is_valid():
             return Response(serializer._error, status=status.HTTP_409_CONFLICT)
         try:
-            serializer.create()
+            new_account = serializer.create()
+            if new_account:
+                CartHeaders.objects.create(account = new_account, total = None)
             return Response(data = f'serializer created', status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)

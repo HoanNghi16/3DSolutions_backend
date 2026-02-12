@@ -4,12 +4,13 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models import OneToOneField
 
+
 # Create your models here.
 
 class Users(models.Model):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    phone =models.CharField(max_length=15)
+    phone =models.CharField(max_length=15, unique=False)
     date_of_birth = models.DateField()
     address = models.CharField(max_length=200, default = "")
     is_male = models.BooleanField(default = True)
@@ -49,7 +50,7 @@ class UserAccounts(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile = OneToOneField(Users, on_delete=models.CASCADE, related_name='user_account')
     email = models.EmailField(unique=True)
-    avt = models.CharField(max_length=200, default = "/user.png")
+    avt = models.CharField(max_length=200, default = "default")
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)

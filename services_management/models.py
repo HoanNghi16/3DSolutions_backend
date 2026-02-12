@@ -18,6 +18,7 @@ class ServiceOrderHeaders(models.Model):
     user = models.ForeignKey(UserAccounts, on_delete=models.CASCADE)
     total = models.FloatField()
     date = models.DateField()
+    pay_status = models.BooleanField(default=False)
 
 class ServiceOrderDetails(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
