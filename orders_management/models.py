@@ -13,6 +13,7 @@ class OrderHeaders(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     pay_status = models.BooleanField(default=False)
     method = models.IntegerField(default=0)
+    status = models.IntegerField(default=0)
 
     def __str__(self):
         return f'id = {self.id}, user = {self.user}, total = {self.total}'

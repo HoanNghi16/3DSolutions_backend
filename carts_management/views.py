@@ -26,15 +26,19 @@ class AddToCartView(APIView):
     def post(self, request):
         try:
             product_id = request.data['product']
+            quantity = request.data['quantity']
+            print(product_id, quantity)
             cart_header = CartHeaders.objects.get(account = request.user)
             product = Products.objects.get(id = product_id)
             cart_details = CartDetails.objects.filter(header = cart_header, product = product).first()
             if cart_details:
                 cart_details = cart_details
-                cart_details.quantity = F('quantity') + 1
+                if product.quantity <= cart_details.quantity:
+                    return Response(data= '{"message": "Over in stock quantity"}', status=status.HTTP_400_BAD_REQUEST)
+                cart_details.quantity = F('quantity') + quantity
                 cart_details.save()
             else:
-                CartDetails.objects.create(header = cart_header, product = product, quantity = 1)
+                CartDetails.objects.create(header = cart_header, product = product, quantity = quantity)
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
             print(e)

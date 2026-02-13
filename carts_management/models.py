@@ -8,7 +8,7 @@ from users_management.models import UserAccounts
 class CartHeaders(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     account = models.OneToOneField(UserAccounts, on_delete=models.CASCADE)
-    total = models.FloatField(default=0)
+    total = models.IntegerField(default=0)
 
     def __str__(self):
         return f'header_id: {self.id}, account: {self.account.id}, total: {self.total}'
