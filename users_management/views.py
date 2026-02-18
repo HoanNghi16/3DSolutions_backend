@@ -1,4 +1,3 @@
-from pyexpat.errors import messages
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -12,20 +11,23 @@ from carts_management.models import CartHeaders
 from .authenticate import CookieAuthenticateJWT
 from .serializer import UsersSerializer, UserAccountsSerializer
 from django.contrib.auth import authenticate
-from .models import UserAccounts
+from .models import UserAccounts, Address
 from rest_framework.permissions import AllowAny
 
 class RegistrationView(APIView):
     def post(self, request):
         serializer = UsersSerializer(data=request.data)
-        print(serializer.is_valid())
         if not serializer.is_valid():
+            print(serializer._error)
             return Response(serializer._error, status=status.HTTP_409_CONFLICT)
         try:
             new_account = serializer.create()
+            print(new_account)
             if new_account:
-                CartHeaders.objects.create(account = new_account, total = None)
-            return Response(data = f'serializer created', status=status.HTTP_201_CREATED)
+                new_cart = CartHeaders.objects.create(account = new_account)
+                new_cart.save()
+                print(new_cart)
+            return Response(data = f'account created', status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -68,6 +70,25 @@ class LogoutView(APIView):
             token.blacklist()
             response = Response({'message': 'success'}, status=status.HTTP_200_OK)
             response.delete_cookie(key = 'access')
+            response.delete_cookie(key = 'refresh')
             return response
         except Exception as e:
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NewAddressView(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    def post(self, request):
+        parameter = {
+            'phone_2': request.get('phone_2'),
+            'name_2' : request.get('name_2'),
+            'city'  : request.get('city'),
+            'ward' : request.get('ward'),
+            'street' : request.get('street'),
+            'number' : request.get('number'),
+        }
+        if request.user:
+            address = Address.objects.create( user = request.user.profile,**parameter)
+            address.save()
+        else:
+            user = Users.objects.create()

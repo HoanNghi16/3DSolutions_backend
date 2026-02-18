@@ -1,6 +1,6 @@
 from time import strptime
 from datetime import date, datetime
-from .models import Users, UserAccounts
+from .models import Users, UserAccounts, Address
 import re
 from rest_framework import serializers
 
@@ -91,11 +91,18 @@ class UsersSerializer:
     def __str__(self):
         return str(self.valid_data)
 
-class UserInformationsSerializer(serializers.ModelSerializer):
+class AddressSerializer(serializers.Serializer):
     class Meta:
-        model = Users
+        model = Address
         fields = '__all__'
 
+class UserInformationsSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(many=True)
+    class Meta:
+        model = Users
+        fields = ['user_id', 'name', 'phone', 'date_of_birth', 'address']
+    def get_address(self, obj):
+        return obj.address
 class UserAccountsSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)
     class Meta:

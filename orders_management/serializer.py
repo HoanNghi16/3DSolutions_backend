@@ -1,8 +1,6 @@
 from orders_management.models import OrderHeaders, OrderDetails
 from rest_framework import serializers
 from products_management.serializer import ProductsSerializer
-from users_management.models import Users
-from products_management.models import Products
 
 
 class OrderDetailsSerializer(serializers.ModelSerializer):

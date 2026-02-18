@@ -45,6 +45,7 @@ class DetailsView(RetrieveAPIView):
     serializer_class = ProductDetailsSerializer
     lookup_field = 'id'
 
+
 class MaterialsView(ListAPIView):
     queryset = Materials.objects.all().order_by("-id")
     serializer_class = ProductMaterialSerializer

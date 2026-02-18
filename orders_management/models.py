@@ -2,7 +2,7 @@ import uuid
 
 from django.db import models
 from products_management.models import Products
-from users_management.models import Users
+from users_management.models import Users, Address
 
 
 # Create your models here.
@@ -14,6 +14,7 @@ class OrderHeaders(models.Model):
     pay_status = models.BooleanField(default=False)
     method = models.IntegerField(default=0)
     status = models.IntegerField(default=0)
+    address = models.ForeignKey(Address, on_delete=models.CASCADE)
 
     def __str__(self):
         return f'id = {self.id}, user = {self.user}, total = {self.total}'
