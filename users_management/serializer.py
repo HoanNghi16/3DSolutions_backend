@@ -91,7 +91,7 @@ class UsersSerializer:
     def __str__(self):
         return str(self.valid_data)
 
-class AddressSerializer(serializers.Serializer):
+class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = '__all__'
@@ -101,8 +101,7 @@ class UserInformationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ['user_id', 'name', 'phone', 'date_of_birth', 'address']
-    def get_address(self, obj):
-        return obj.address
+
 class UserAccountsSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)
     class Meta:

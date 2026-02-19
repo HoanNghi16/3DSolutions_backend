@@ -13,4 +13,4 @@ class OrdersSerializer(serializers.ModelSerializer):
     details = OrderDetailsSerializer(many=True, read_only=True)
     class Meta:
         model = OrderHeaders
-        fields = ['id', 'user_id', 'pay', 'method', 'details']
+        fields = '__all__'

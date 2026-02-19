@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -13,6 +14,7 @@ from .serializer import UsersSerializer, UserAccountsSerializer
 from django.contrib.auth import authenticate
 from .models import UserAccounts, Address
 from rest_framework.permissions import AllowAny
+from users_management.models import Users
 
 class RegistrationView(APIView):
     def post(self, request):
@@ -39,11 +41,11 @@ def get_token_for_user(user):
     }
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
     def post(self, request):
+        print(request.data)
         data = request.data
         user_authenticated = authenticate(request,email=data.get('email'), password=data.get('password'))
+        print(user_authenticated)
         if not user_authenticated:
             return Response(data = 'Invalid credentials ', status=status.HTTP_401_UNAUTHORIZED)
         try:
@@ -78,17 +80,19 @@ class LogoutView(APIView):
 
 class NewAddressView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
-        parameter = {
-            'phone_2': request.get('phone_2'),
-            'name_2' : request.get('name_2'),
-            'city'  : request.get('city'),
-            'ward' : request.get('ward'),
-            'street' : request.get('street'),
-            'number' : request.get('number'),
-        }
-        if request.user:
-            address = Address.objects.create( user = request.user.profile,**parameter)
-            address.save()
-        else:
-            user = Users.objects.create()
+        try:
+            if not request.data:
+                return Response(data = {'message': "No data sent"}, status=status.HTTP_404_NOT_FOUND)
+
+            if request.user.is_authenticated:
+                address = Address.objects.create( user = request.user.profile,**(request.data))
+                address.save()
+                return Response({'message': 'success'}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(data = {'message': "Please log in"}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response(data=f'{e}',status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

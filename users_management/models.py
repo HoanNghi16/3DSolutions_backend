@@ -23,9 +23,9 @@ class Users(models.Model):
         return self.date_of_birth
 
 class Address(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='address')
-    phone_2 = models.CharField(max_length=15, unique=False, null=True, default=None)
-    name_2 = models.CharField(max_length=100,null=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='address', null=True)
+    receiver_phone = models.CharField(max_length=15, unique=False, null=True, default=None)
+    receiver_name = models.CharField(max_length=100,null=True)
     city = models.CharField(max_length=100)
     ward = models.CharField(max_length=100)
     street = models.CharField(max_length=100)

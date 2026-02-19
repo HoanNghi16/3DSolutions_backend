@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,36 +18,28 @@ class OrdersView(ListAPIView):
     serializer_class = OrdersSerializer
     authentication_classes = [CookieAuthenticateJWT]
     def get_queryset(self):
-        name = self.request.query_params.get('name', None)
-        phone = self.request.query_params.get('phone', None)
-        user = None
-        if name and phone:
-            user = Users.objects.get(name=name, phone=phone)
-        if not user:
-            user = self.request.user.profile
+        user = self.request.user.profile
         order = OrderHeaders.objects.filter(user=user)
+        print(order)
         return order
 
-class BuyNowView(APIView):
+class OrderCreateView(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
     def post(self, request):
-        profile = request.data['profile']
-        product = request.data['product']
-        quantity = request.data['quantity']
-        pay_status = request.data['pay_status']
-        method = request.data['method']
-        status = request.data['status']
-
-        if profile and product and quantity:
-            profile  = Users.objects.get(name=profile)
-            product = Products.objects.get(id=product)
-            header = OrderHeaders.objects.create(user = profile, total = quantity*product.unit_price, pay_status = pay_status, method = method, status = status )
-            detail = OrderDetails.objects.create(header = header, product = product, quantity = quantity)
-            header.save()
-            detail.save()
-            return Response(status=status.HTTP_200_OK)
-
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+            if request.user.is_authenticated:
+                header = OrderHeaders.objects.create(user = request.user.profile,**request.data['header'])
+            else:
+                header = OrderHeaders.objects.create(**request.data['header'], user = None)
+            if header:
+                details = request.data['details']
+                for detail in details:
+                    product = Products.objects.get(id = detail['product']['id'])
+                    term = OrderDetails.objects.create(header = header,product = product, quantity = detail['quantity'])
+                    term.save()
+            return Response(status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'message': e},status=status.HTTP_400_BAD_REQUEST)
 
 
 class OrderPreviewList(APIView):
@@ -59,7 +51,6 @@ class OrderPreviewList(APIView):
         list_ids = request.data['list_ids']
         quantity = int(request.data['quantity'])
         if mode == "buyNow":
-
             preview = Products.objects.filter(id__in=list_ids)
             if self.check_quantity(quantity, preview.first()):
                 preview = ProductsSerializer(preview, many=True).data
