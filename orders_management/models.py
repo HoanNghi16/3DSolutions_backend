@@ -13,13 +13,14 @@ class OrderHeaders(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     pay_status = models.BooleanField(default=False)
     method = models.IntegerField(default=0)
-    status = models.IntegerField(default=0)
+    order_status = models.IntegerField(default=0)
     receiver_phone = models.CharField(max_length=15, unique=False, null=True, default=None)
     receiver_name = models.CharField(max_length=100,null=True)
     city = models.CharField(max_length=100, default='')
     ward = models.CharField(max_length=100, default='')
     street = models.CharField(max_length=100, default='')
     number = models.CharField(max_length=30, default="")
+    expire_at = models.DateTimeField(null = True, default = None)
 
     def __str__(self):
         return f'id = {self.id}, user = {self.user}, total = {self.total}'

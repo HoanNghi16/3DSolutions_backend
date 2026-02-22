@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
+
 from carts_management.models import CartHeaders
 from .authenticate import CookieAuthenticateJWT
 from .serializer import UsersSerializer, UserAccountsSerializer
@@ -83,9 +84,11 @@ class NewAddressView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
         try:
-            if not request.data:
+            if request.data:
+                if '' in request.data.values() or None in request.data.values():
+                    return Response(data = {'message': "No data sent"}, status=status.HTTP_404_NOT_FOUND)
+            else:
                 return Response(data = {'message': "No data sent"}, status=status.HTTP_404_NOT_FOUND)
-
             if request.user.is_authenticated:
                 address = Address.objects.create( user = request.user.profile,**(request.data))
                 address.save()
