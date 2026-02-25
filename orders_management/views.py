@@ -89,7 +89,7 @@ class OrderCreateView(APIView):
                         CartDetails.objects.filter( id__in = list_ids).delete()
                 header.total = total
                 header.save()
-                return Response({'message': 'success'}, status=status.HTTP_201_CREATED)
+                return Response({'message': 'success', 'order_id': header.id}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
