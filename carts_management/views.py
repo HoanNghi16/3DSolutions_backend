@@ -11,8 +11,6 @@ from carts_management.serializer import CartSerializer
 from carts_management.models import CartHeaders, CartDetails
 from users_management.authenticate import CookieAuthenticateJWT
 
-
-# Create your views here.
 class CartView(RetrieveAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
@@ -50,20 +48,25 @@ class CartChangeView(APIView):
 
     #CHANGE QUANTITY
     def patch(self, request):
-        if (not request.user.is_authenticated):
+        user = request.user
+        if (not user.is_authenticated):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         try:
-            quantity = request.data['quantity']
+            quantity = int(request.data['quantity'])
+            product = Products.objects.get(id = request.data['product'])
+            if(quantity > product.quantity):
+                raise Exception('Out of stock')
             detail_id = request.data['detail']
-            cart_header = CartHeaders.objects.get(account = request.user)
+            cart_header = CartHeaders.objects.get(account = user)
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             if not detail:
                 raise Exception("Not found")
             detail.quantity = quantity
+            print(detail)
             detail.save()
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': e},status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         if (not request.user.is_authenticated):
@@ -77,4 +80,4 @@ class CartChangeView(APIView):
             detail.delete()
             return Response(status=HTTP_200_OK)
         except Exception as e:
-            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': e},status=status.HTTP_400_BAD_REQUEST)

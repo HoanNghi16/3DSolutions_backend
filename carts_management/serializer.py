@@ -13,7 +13,11 @@ class CartDetailsSerializer(serializers.ModelSerializer):
     def get_sub_total(self, obj):
         return obj.product.unit_price * obj.quantity
 class CartSerializer(serializers.ModelSerializer):
-    cart_details = CartDetailsSerializer(many=True, read_only=True)
+    cart_details = serializers.SerializerMethodField()
     class Meta:
         model = CartHeaders
         fields = ['cart_details']
+    def get_cart_details(self, obj):
+        cart_details = CartDetails.objects.filter(header = obj).order_by('-date')
+        print(cart_details)
+        return CartDetailsSerializer(cart_details, many=True).data

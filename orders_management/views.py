@@ -100,31 +100,42 @@ class OrderPreviewList(APIView):
     def check_quantity(self, quantity, product):
         return quantity <= product.quantity
     def post(self, request):
-        mode = request.data['mode']
-        list_ids = request.data['list_ids']
-        if mode == "buyNow":
-            preview = Products.objects.filter(id__in=list_ids)
-            quantity = int(request.data['quantity'] if request.data['quantity'] else 1)
-            if self.check_quantity(quantity, preview.first()):
-                preview = ProductsSerializer(preview, many=True).data
+        try:
+            mode = request.data['mode']
+            list_ids = request.data['list_ids']
+            if mode == "buyNow":
+                preview = Products.objects.filter(id__in=list_ids)
+                quantity = int(request.data['quantity'] if request.data['quantity'] else 1)
+                if quantity == 0:
+                    raise Exception('Số lượng sản phẩm phải lớn hon 0!')
+                print(quantity)
+                if self.check_quantity(quantity, preview.first()):
+                    preview = ProductsSerializer(preview, many=True).data
+                    result = []
+                    for pro in preview:
+                        result.append({'product': pro, 'quantity': quantity, 'sub_total': pro['unit_price']*quantity})
+                    return Response(result, status=status.HTTP_200_OK)
+                else:
+                    raise Exception('Không đủ sản phẩm!')
+            elif mode == 'order':
+                header = CartHeaders.objects.get(account = request.user)
+                preview = CartDetails.objects.filter(header = header)
+                preview = preview.filter(id__in=list_ids)
                 result = []
-                for pro in preview:
-                    result.append({'product': pro, 'quantity': quantity, 'sub_total': pro['unit_price']*quantity})
+                for pre in preview:
+                    if self.check_quantity(pre.quantity, pre.product):
+                        result.append(pre)
+                    elif pre.quantity == 0:
+                        raise Exception("Số lượng phải lớn hơn 0!")
+                    else:
+                        raise Exception("Không đủ sản phẩm!")
+                result = CartDetailsSerializer(result, many=True).data
                 return Response(result, status=status.HTTP_200_OK)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        elif mode == 'order':
-            print(request.user)
-            header = CartHeaders.objects.get(account = request.user)
-            preview = CartDetails.objects.filter(header = header)
-            preview = preview.filter(id__in=list_ids)
-            result = []
-            for pre in preview:
-                if self.check_quantity(pre.quantity, pre.product):
-                    result.append(pre)
-            result = CartDetailsSerializer(result, many=True).data
-            return Response(result, status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(e)
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
