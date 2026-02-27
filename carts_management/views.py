@@ -36,7 +36,7 @@ class CartChangeView(APIView):
             if cart_details:
                 cart_details = cart_details
                 if product.quantity <= cart_details.quantity:
-                    return Response(data= '{"message": "Over in stock quantity"}', status=status.HTTP_400_BAD_REQUEST)
+                    return Response(data= '{"message": "Sản phẩm không đủ!"}', status=status.HTTP_400_BAD_REQUEST)
                 cart_details.quantity = F('quantity') + quantity
                 cart_details.save()
             else:
@@ -55,18 +55,18 @@ class CartChangeView(APIView):
             quantity = int(request.data['quantity'])
             product = Products.objects.get(id = request.data['product'])
             if(quantity > product.quantity):
-                raise Exception('Out of stock')
+                raise Exception('Sản phẩm không đủ!')
             detail_id = request.data['detail']
             cart_header = CartHeaders.objects.get(account = user)
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             if not detail:
-                raise Exception("Not found")
+                raise Exception("Vui lòng thêm sản phẩm vào giỏ hàng!")
             detail.quantity = quantity
             print(detail)
             detail.save()
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'message': e},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         if (not request.user.is_authenticated):
@@ -74,10 +74,10 @@ class CartChangeView(APIView):
         try:
             cart_header = CartHeaders.objects.get(account = request.user)
             if not cart_header:
-                raise Exception("Not found")
+                raise Exception("Không tìm thấy giỏ hàng!")
             detail_id = request.data['detail']
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             detail.delete()
             return Response(status=HTTP_200_OK)
         except Exception as e:
-            return Response({'message': e},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
