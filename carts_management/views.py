@@ -22,29 +22,32 @@ class CartView(RetrieveAPIView):
 
 class CartChangeView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
-    permission_classes = [IsAuthenticated]
-
     #ADD TO CART
     def post(self, request):
         try:
+            if not request.user.is_authenticated:
+                raise Exception('Vui lòng đăng nhập để sử dụng giỏ hàng!')
             product_id = request.data['product']
             quantity = request.data['quantity']
-            print(product_id, quantity)
+            product = Products.objects.get(id=product_id)
+            if product.quantity == 0:
+                raise Exception('Sản phẩm đã hết hàng!')
             cart_header = CartHeaders.objects.get(account = request.user)
-            product = Products.objects.get(id = product_id)
+
             cart_details = CartDetails.objects.filter(header = cart_header, product = product).first()
             if cart_details:
                 cart_details = cart_details
                 if product.quantity <= cart_details.quantity:
-                    return Response(data= '{"message": "Sản phẩm không đủ!"}', status=status.HTTP_400_BAD_REQUEST)
+                    return Response(data= {"message": "Sản phẩm không đủ!"}, status=status.HTTP_400_BAD_REQUEST)
                 cart_details.quantity = F('quantity') + quantity
                 cart_details.save()
             else:
                 CartDetails.objects.create(header = cart_header, product = product, quantity = quantity)
-            return Response(status=status.HTTP_200_OK)
+
+            cart_count = len(CartDetails.objects.filter(header = cart_header))
+            return Response({'cart_count': cart_count, 'message': 'Đã thêm vào giỏ hàng'},status=status.HTTP_200_OK)
         except Exception as e:
-            print(e)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
 
     #CHANGE QUANTITY
     def patch(self, request):
@@ -62,7 +65,6 @@ class CartChangeView(APIView):
             if not detail:
                 raise Exception("Vui lòng thêm sản phẩm vào giỏ hàng!")
             detail.quantity = quantity
-            print(detail)
             detail.save()
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
@@ -78,6 +80,8 @@ class CartChangeView(APIView):
             detail_id = request.data['detail']
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             detail.delete()
-            return Response(status=HTTP_200_OK)
+            cart_count = len(CartDetails.objects.filter(header=cart_header))
+            print(cart_count)
+            return Response({'cart_count': cart_count, 'message': 'Đã xóa khỏi giỏ hàng!'},status=HTTP_200_OK)
         except Exception as e:
             return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)

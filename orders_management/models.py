@@ -11,7 +11,7 @@ class OrderHeaders(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True)
     total = models.FloatField()
     date = models.DateTimeField(auto_now_add=True)
-    pay_status = models.BooleanField(default=False)
+    pay_status = models.IntegerField(default=0)
     method = models.IntegerField(default=0)
     order_status = models.IntegerField(default=0)
     receiver_phone = models.CharField(max_length=15, unique=False, null=True, default=None)
@@ -20,7 +20,7 @@ class OrderHeaders(models.Model):
     ward = models.CharField(max_length=100, default='')
     street = models.CharField(max_length=100, default='')
     number = models.CharField(max_length=30, default="")
-    expire_at = models.DateTimeField(null = True, default = None)
+    expire_at = models.DateTimeField(null = True)
 
     def __str__(self):
         return f'id = {self.id}, user = {self.user}, total = {self.total}'

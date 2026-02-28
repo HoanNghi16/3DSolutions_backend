@@ -1,10 +1,12 @@
-from datetime import timezone, timedelta
-
+from datetime import timedelta
+from django.utils import timezone
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
 from django.db.models import F
 
@@ -22,11 +24,15 @@ from .serializer import OrdersSerializer
 class OrdersView(ListAPIView):
     serializer_class = OrdersSerializer
     authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAuthenticated]
     def get_queryset(self):
         user = self.request.user.profile
-        order = OrderHeaders.objects.filter(user=user)
-        print(order)
-        return order
+        status = self.request.query_params.get('status')
+        if status != 'null' and status:
+            orders = OrderHeaders.objects.filter(user=user, order_status = int(status)).order_by('-date')
+        else:
+            orders = OrderHeaders.objects.filter(user=user).order_by('-date')
+        return orders
 
 class OrderCreateView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
@@ -42,14 +48,15 @@ class OrderCreateView(APIView):
                 if not details:
                     raise Exception('Order must has at least one product')
                 user = request.user.profile if request.user.is_authenticated else None
-                method = request.data.get('method', 0)
+                method = int(request.data['header'].get('method',None))
+                if method is None:
+                    raise Exception('Vui lòng chọn phương thức thanh toán!')
                 if method == 1:
                     pay_status = -1
                     expire_at = timezone.now() + timedelta(hours=1)
                 else:
                     pay_status = 0
                     expire_at = None
-                total = 0
                 if user:
                     address_id = request.data['header'].get('address_id', None)
                     address = Address.objects.get(id=address_id, user= user)
@@ -71,7 +78,8 @@ class OrderCreateView(APIView):
                 print(city)
                 header = OrderHeaders.objects.create(user=user, method=method, pay_status=pay_status, order_status=0, receiver_name=receiver_name,
                                                      receiver_phone=receiver_phone, number=number, street=street,
-                                                     city=city, ward=ward, total = total, expire_at = expire_at)
+                                                     city=city, ward=ward, total = 0, expire_at = expire_at)
+                total = 0.0
                 for detail in details:
                     product = Products.objects.select_for_update().get(id=detail['product'])
                     quantity = int(detail['quantity'])
@@ -82,19 +90,52 @@ class OrderCreateView(APIView):
                     term = OrderDetails.objects.create(header = header, product = product, quantity = quantity, current_price = product.unit_price)
                     total += term.quantity*term.current_price
                     term.save()
+                print(total)
+                header.total = total
+                print(header.total)
+                header.save()
+                print(header)
                 list_ids = request.data.get('list_ids', None)
                 if list_ids and user:
-                    header = CartHeaders.objects.get(account = request.user if request.user.is_authenticated else None)
-                    if header:
+                    cart_header = CartHeaders.objects.get(account = request.user if request.user.is_authenticated else None)
+                    if cart_header:
                         CartDetails.objects.filter( id__in = list_ids).delete()
-                header.total = total
-                header.save()
-                return Response({'message': 'success', 'order_id': header.id}, status=status.HTTP_201_CREATED)
+
+                return Response({'message': 'Đặt hàng thành công', 'order_id': header.id}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
+class OrderCancelView(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        try:
+            with transaction.atomic():
+                if not request.user.is_authenticated:
+                    raise Exception('Vui lòng đăng nhập để sử dụng')
+                order_id = request.data.get('order_id', None)
+                if order_id is None:
+                    raise Exception('Không tồn tại đơn hàng')
+                user = request.user.profile
+                order = OrderHeaders.objects.get(user=user,id = order_id)
+                if order is None:
+                    raise Exception('Không tìm thấy đơn hàng')
+                if request.user.is_superuser:
+                    order.order_status= -1 #Đã hủy
+                    order.save()
+                    return Response({'message': 'Hủy đơn hàng thành oông'}, status.HTTP_202_ACCEPTED)
+                elif order.order_status == -1:
+                    raise Exception('Đơn hàng đã hủy!')
+                elif order.order_status >= 2:
+                    order.order_status = -2 #Đợi admin xác nhận
+                elif order.order_status in [0,1]:
+                    order.order_status = -1 #đã hủy
+                    return Response({'message': 'Hủy đơn hàng thành công!'}, status.HTTP_202_ACCEPTED)
+                else:
+                    raise Exception('Something went wrong!')
+        except Exception as e:
+            return Response({'message': str(e)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
 class OrderPreviewList(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     def check_quantity(self, quantity, product):

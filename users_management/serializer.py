@@ -1,5 +1,7 @@
 from time import strptime
 from datetime import date, datetime
+
+from carts_management.models import CartHeaders, CartDetails
 from .models import Users, UserAccounts, Address
 import re
 from rest_framework import serializers
@@ -104,6 +106,11 @@ class UserInformationsSerializer(serializers.ModelSerializer):
 
 class UserAccountsSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)
+    cart_count = serializers.SerializerMethodField()
     class Meta:
         model = UserAccounts
-        fields = ['id', 'avt', 'email', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff']
+        fields = ['id', 'avt', 'email', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff', 'cart_count']
+    def get_cart_count(self,obj):
+        header = CartHeaders.objects.get(account = obj)
+        count = CartDetails.objects.filter(header = header).count()
+        return count
