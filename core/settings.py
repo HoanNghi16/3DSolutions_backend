@@ -62,7 +62,8 @@ INSTALLED_APPS = [
     'services_management',
     'orders_management',
     'carts_management',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'pay_management',
 ]
 
 MIDDLEWARE = [

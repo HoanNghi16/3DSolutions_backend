@@ -57,6 +57,8 @@ class CartChangeView(APIView):
         try:
             quantity = int(request.data['quantity'])
             product = Products.objects.get(id = request.data['product'])
+            if quantity <= 0:
+                raise Exception('Số lượng sản phẩm phải lớn hơn 0!')
             if(quantity > product.quantity):
                 raise Exception('Sản phẩm không đủ!')
             detail_id = request.data['detail']

@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
@@ -17,12 +17,12 @@ from products_management.serializer import ProductsSerializer
 from users_management.authenticate import CookieAuthenticateJWT
 from users_management.models import Address
 from .models import OrderHeaders, OrderDetails
-from .serializer import OrdersSerializer
+from .serializer import OrdersSerializer, OrderDetailsSerializer, OrdersListSerializer
 
 
 # Create your views here.
 class OrdersView(ListAPIView):
-    serializer_class = OrdersSerializer
+    serializer_class = OrdersListSerializer
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
@@ -33,17 +33,22 @@ class OrdersView(ListAPIView):
         else:
             orders = OrderHeaders.objects.filter(user=user).order_by('-date')
         return orders
+class OrderDetailsView(RetrieveAPIView):
+    serializer_class = OrdersSerializer
+    authentication_classes = [CookieAuthenticateJWT]
+    lookup_field = 'id'
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return OrderHeaders.objects.filter(user=self.request.user.profile).order_by('-date')
+        else:
+            return OrderHeaders.objects.filter(user=None).order_by('-date')
+
 
 class OrderCreateView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     def post(self, request):
         try:
             with transaction.atomic():
-                #order_status: 0 -> ordered, 1 -> confirmed, 2-> Packed, 3 -> On delivery, 4 -> finish
-                #pay_method: 0 = cash, 1 = online
-                #pay_status: 0 = unpaid, 1 = paid, -1 = wait (only for online payment)
-                #Frontend will send pay_method only, all default value is 0
-
                 details = request.data.get('details', None)
                 if not details:
                     raise Exception('Order must has at least one product')
@@ -90,17 +95,13 @@ class OrderCreateView(APIView):
                     term = OrderDetails.objects.create(header = header, product = product, quantity = quantity, current_price = product.unit_price)
                     total += term.quantity*term.current_price
                     term.save()
-                print(total)
                 header.total = total
-                print(header.total)
                 header.save()
-                print(header)
                 list_ids = request.data.get('list_ids', None)
                 if list_ids and user:
                     cart_header = CartHeaders.objects.get(account = request.user if request.user.is_authenticated else None)
                     if cart_header:
                         CartDetails.objects.filter( id__in = list_ids).delete()
-
                 return Response({'message': 'Đặt hàng thành công', 'order_id': header.id}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
@@ -109,6 +110,20 @@ class OrderCreateView(APIView):
 class OrderCancelView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAuthenticated]
+    def roll_back_quantity(self, order_id):
+        try:
+            with transaction.atomic():
+                order = OrderHeaders.objects.get(id=order_id)
+                details = OrderDetails.objects.filter(header=order)
+                for detail in details:
+                    product = Products.objects.select_for_update().get(id=detail.product.id)
+                    product.quantity = F('quantity') + detail.quantity
+                    product.save()
+                return True
+        except Exception as e:
+            print(str(e))
+            return False
+
     def post(self, request):
         try:
             with transaction.atomic():
@@ -124,13 +139,15 @@ class OrderCancelView(APIView):
                 if request.user.is_superuser:
                     order.order_status= -1 #Đã hủy
                     order.save()
-                    return Response({'message': 'Hủy đơn hàng thành oông'}, status.HTTP_202_ACCEPTED)
+                    print(self.roll_back_quantity(order_id))
+                    return Response({'message': 'Hủy đơn hàng thành công'}, status.HTTP_202_ACCEPTED)
                 elif order.order_status == -1:
                     raise Exception('Đơn hàng đã hủy!')
                 elif order.order_status >= 2:
                     order.order_status = -2 #Đợi admin xác nhận
                 elif order.order_status in [0,1]:
                     order.order_status = -1 #đã hủy
+                    print(self.roll_back_quantity(order_id))
                     return Response({'message': 'Hủy đơn hàng thành công!'}, status.HTTP_202_ACCEPTED)
                 else:
                     raise Exception('Something went wrong!')
@@ -139,6 +156,8 @@ class OrderCancelView(APIView):
 class OrderPreviewList(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     def check_quantity(self, quantity, product):
+        if product.quantity == 0:
+            raise Exception('Sản phẩm hết hàng!')
         return quantity <= product.quantity
     def post(self, request):
         try:
@@ -146,8 +165,8 @@ class OrderPreviewList(APIView):
             list_ids = request.data['list_ids']
             if mode == "buyNow":
                 preview = Products.objects.filter(id__in=list_ids)
-                quantity = int(request.data['quantity'] if request.data['quantity'] else 1)
-                if quantity == 0:
+                quantity = int(request.data['quantity'])
+                if quantity <= 0:
                     raise Exception('Số lượng sản phẩm phải lớn hon 0!')
                 print(quantity)
                 if self.check_quantity(quantity, preview.first()):
@@ -160,8 +179,20 @@ class OrderPreviewList(APIView):
                     raise Exception('Không đủ sản phẩm!')
             elif mode == 'order':
                 header = CartHeaders.objects.get(account = request.user)
-                preview = CartDetails.objects.filter(header = header)
+                preview = CartDetails.objects.filter(header = header).order_by('-id')
                 preview = preview.filter(id__in=list_ids)
+                result = []
+                for pre in preview:
+                    if self.check_quantity(pre.quantity, pre.product):
+                        result.append(pre)
+                    else:
+                        raise Exception("Không đủ sản phẩm!")
+                    if int(pre.quantity) <= 0:
+                        raise Exception("Số lượng phải lớn hơn 0!")
+                result = CartDetailsSerializer(result, many=True).data
+                return Response(result, status=status.HTTP_200_OK)
+            elif mode == 'reOrder':
+                preview = OrderDetails.objects.filter(id__in=list_ids)
                 result = []
                 for pre in preview:
                     if self.check_quantity(pre.quantity, pre.product):
@@ -170,10 +201,10 @@ class OrderPreviewList(APIView):
                         raise Exception("Số lượng phải lớn hơn 0!")
                     else:
                         raise Exception("Không đủ sản phẩm!")
-                result = CartDetailsSerializer(result, many=True).data
+                result = OrderDetailsSerializer(result, many=True).data
                 return Response(result, status=status.HTTP_200_OK)
             else:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                raise Exception('Lỗi!')
         except Exception as e:
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
