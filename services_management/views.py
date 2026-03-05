@@ -1,23 +1,41 @@
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-from django.shortcuts import render
-from rest_framework.generics import ListAPIView
-from services_management.serializer import ServiceOrdersSerializer, ServiceOrderHeadersSerializer, ServicesSerializer
-from services_management.models import ServiceOrderHeaders, Services
+from users_management.authenticate import CookieAuthenticateJWT
+from .cloudinary_service import upload_image, delete_image
+from .models import CustomerUploaded
 
 
-# Create your views here.
-class ServicesView(ListAPIView):
-    queryset = Services.objects.all()
-    serializer_class = ServicesSerializer
+class FileUploadView(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    def post(self, request):
+        try:
+            if not request.user.is_authenticated:
+                raise Exception('Vui lòng đăng nhập để sử dụng chức năng này!')
+            account = request.user
+            file = request.FILES["file"]
+            if not file:
+                raise Exception('Vui lòng chọn file!')
+            type = request.data["type"]
+            if type == 'avt':
+                result = upload_image(file=file, folder=type)
+                if not result:
+                    raise Exception('Lỗi!')
+                else:
+                    term = CustomerUploaded.objects.create(public_file_id=result['public_id'], type=type, path = result['url'])
+                    term.save()
+                    old_avt = CustomerUploaded.objects.filter(path = account.avt).first()
+                    if old_avt:
+                        delete = delete_image('avt/'+old_avt.public_file_id)
+                        old_avt.delete()
+                        print(delete)
+                    account.avt = result['url']
+                    account.save()
+                    return Response({'message': 'Đổi ảnh đại diện thành công!'}, status=status.HTTP_202_ACCEPTED)
+            else:
+                raise Exception("Chức năng này chưa được hoàn thiện!")
+        except Exception as e:
+            print(e)
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ServiceOrdersView(ListAPIView):
-    serializer_class = ServiceOrdersSerializer
-    def get_queryset(self):
-        id = self.kwargs.get('id')
-        return ServiceOrderHeaders.objects.filter(user=id)
-
-class ServiceOrdersListView(ListAPIView):
-    serializer_class = ServiceOrderHeadersSerializer
-    def get_queryset(self):
-        id = self.kwargs.get('id')
-        return ServiceOrderHeaders.objects.filter(user=id)

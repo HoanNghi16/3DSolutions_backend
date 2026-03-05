@@ -102,7 +102,13 @@ class OrderCreateView(APIView):
                     cart_header = CartHeaders.objects.get(account = request.user if request.user.is_authenticated else None)
                     if cart_header:
                         CartDetails.objects.filter( id__in = list_ids).delete()
-                return Response({'message': 'Đặt hàng thành công', 'order_id': header.id}, status=status.HTTP_201_CREATED)
+                if method == 1:
+                    next_page = '/checkout/payment/' + str(header.id)
+                elif method == 0:
+                    next_page = '/checkout/result?id='+str(header.id)
+                else:
+                    raise Exception('Lỗi!')
+                return Response({'message': 'Đặt hàng thành công', 'order_id': header.id, 'next_page': next_page}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -157,7 +163,7 @@ class OrderPreviewList(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     def check_quantity(self, quantity, product):
         if product.quantity == 0:
-            raise Exception('Sản phẩm hết hàng!')
+            raise Exception('Sản phẩm đã hết hàng!')
         return quantity <= product.quantity
     def post(self, request):
         try:

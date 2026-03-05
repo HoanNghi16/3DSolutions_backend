@@ -96,6 +96,7 @@ class NewAddressView(APIView):
             else:
                 return Response(data = {'message': "Please log in"}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
+            print(e)
             return Response(data=f'{e}',status = status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ServiceOrdersView, ServicesView
+
+from services_management.views import FileUploadView
 
 urlpatterns = [
-    path('orderservices/<uuid:id>', ServiceOrdersView.as_view(), name='service-orders'),
-    path('services/', ServicesView.as_view(), name='services'),
+    path('file_upload/', FileUploadView.as_view(), name='file_upload'),
 ]
