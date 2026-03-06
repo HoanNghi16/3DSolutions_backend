@@ -14,6 +14,7 @@ class OrderDetailsSerializer(serializers.ModelSerializer):
 
 class OrdersListSerializer(serializers.ModelSerializer):
     list_ids = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
     class Meta:
         model = OrderHeaders
         fields = '__all__'
@@ -23,11 +24,15 @@ class OrdersListSerializer(serializers.ModelSerializer):
         for detail in order_details:
             result.append(detail.id)
         return result
+    def get_date(self,obj):
+        date = obj.date
+        return date.strftime("%d/%m/%Y")
 
 class OrdersSerializer(serializers.ModelSerializer):
     details = OrderDetailsSerializer(many=True, read_only=True)
     list_ids = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
+    product_count = serializers.SerializerMethodField()
     class Meta:
         model = OrderHeaders
         fields = '__all__'
@@ -41,3 +46,14 @@ class OrdersSerializer(serializers.ModelSerializer):
         for detail in order_details:
             result.append(detail.id)
         return result
+    def get_product_count(self, obj):
+        order_details = OrderDetails.objects.filter(header=obj)
+        result = 0
+        for detail in order_details:
+            result += detail.quantity
+        return result
+
+class AdminSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        mmodel = OrderHeaders
+        fields = ['total']

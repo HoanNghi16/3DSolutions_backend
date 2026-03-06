@@ -1,10 +1,13 @@
+import json
 from datetime import timedelta
+from multiprocessing.context import AuthenticationError
+
 from django.utils import timezone
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
@@ -16,6 +19,7 @@ from products_management.models import Products
 from products_management.serializer import ProductsSerializer
 from users_management.authenticate import CookieAuthenticateJWT
 from users_management.models import Address
+from .data_processing import for_pie_chart, for_line_chart, for_bar_chart_1
 from .models import OrderHeaders, OrderDetails
 from .serializer import OrdersSerializer, OrderDetailsSerializer, OrdersListSerializer
 
@@ -211,6 +215,40 @@ class OrderPreviewList(APIView):
                 return Response(result, status=status.HTTP_200_OK)
             else:
                 raise Exception('Lỗi!')
+        except Exception as e:
+            print(e)
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminSummary(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAdminUser]
+    def post(self, request):
+        try:
+            if not request.user.is_authenticated:
+                raise AuthenticationError('Vui lòng đăng nhập!')
+            month = request.data.get('month',None)
+            year = request.data.get('year', timezone.now().year)
+            orders = OrderHeaders.objects.filter(date__year=int(year)).order_by('date')
+            if month:
+                orders = orders.filter(date__month=int(month)).order_by('date')
+            orders = OrdersSerializer(orders, many=True).data
+            total = 0
+            product_count = 0
+            order_status = []
+            for order in orders:
+                total += order['total']
+                product_count += order['product_count']
+                order_status.append(order['order_status'])
+            result = {}
+            #result['orders'] = orders
+            print(for_bar_chart_1(orders))
+            result['total'] = total
+            result['order_count'] = len(orders)
+            result['product_count'] = product_count
+            result['order_status'] = for_pie_chart(order_status)
+            result['pay_method'] = for_line_chart(orders)
+            return Response(result , status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)

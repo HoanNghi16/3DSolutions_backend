@@ -100,9 +100,13 @@ class AddressSerializer(serializers.ModelSerializer):
 
 class UserInformationsSerializer(serializers.ModelSerializer):
     address = AddressSerializer(many=True)
+    date_of_birth = serializers.SerializerMethodField()
     class Meta:
         model = Users
         fields = ['user_id', 'name', 'phone', 'date_of_birth', 'address']
+    def get_date_of_birth(self, obj):
+        date = obj.date_of_birth
+        return date.strftime('%d/%m/%Y')
 
 class UserAccountsSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)
