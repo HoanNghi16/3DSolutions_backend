@@ -237,13 +237,14 @@ class AdminSummary(APIView):
             product_count = 0
             order_status = []
             for order in orders:
+                order_status.append(order['order_status'])
+                if order['order_status'] in [-1, '-1']:
+                    continue
                 total += order['total']
                 product_count += order['product_count']
-                order_status.append(order['order_status'])
             result = {}
-            #result['orders'] = orders
-            print(for_bar_chart_1(orders))
             result['total'] = total
+            result['product_sale_count'] = for_bar_chart_1(orders)
             result['order_count'] = len(orders)
             result['product_count'] = product_count
             result['order_status'] = for_pie_chart(order_status)

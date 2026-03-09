@@ -42,10 +42,16 @@ def for_line_chart(data):
 def for_bar_chart_1(data):
     term_result = {}
     for order in data:
+        if order['order_status'] in [-1, '-1']:
+            continue
         for detail in order['details']:
             if detail['product']['name'] in term_result.keys():
                 term_result[detail['product']['name']] += detail['quantity']
             else:
                 term_result[detail['product']['name']] = detail['quantity']
     print(term_result)
+    result = {}
+    result['products'] = term_result.keys()
+    result['count'] = term_result.values()
+    return result
 

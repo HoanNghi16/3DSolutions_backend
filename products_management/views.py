@@ -1,10 +1,15 @@
-from rest_framework import request
+from rest_framework import request, status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+
+from users_management.authenticate import CookieAuthenticateJWT
+from .cloudinary_service import product_image_upload
 from .models import Products, Materials, Categories
 from .pagination import ProductsPagination
 from .serializer import ProductsSerializer, ProductDetailsSerializer, MaterialsSerializer, ProductMaterialSerializer, \
     CategoriesSerializer
-
+from rest_framework.views import APIView
 def get_all_children(category):
     ids = [category.id]
     for child in category.children.all():
@@ -54,3 +59,21 @@ class CategoriesView(ListAPIView):
         query_set = Categories.objects.filter(parent = None)
         return query_set
     serializer_class = CategoriesSerializer
+
+
+class AdminProduct(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAdminUser]
+    def post(self, request):
+        try:
+            if not request.user.is_authenticated:
+                raise Exception('Vui lòng đăng nhập')
+            else:
+                images = request.data.get('images', None)
+                if images:
+                    for image in images:
+                        result = product_image_upload(image)
+                        print(result)
+                return Response({'message': 'đã đăng nhập'}, status = status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
