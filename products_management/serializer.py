@@ -26,7 +26,7 @@ class ProductsSerializer(serializers.ModelSerializer):
     material = ProductMaterialSerializer()
     class Meta:
         model = Products
-        fields = ["id", "name", "unit_price", "quantity", "thumbnail", "material"]
+        fields = ["id", "name", "unit_price", "quantity", "thumbnail", "material", "category"]
 
     def get_thumbnail(self, obj):
         thumbnail = obj.images.filter(is_thumbnail=True).first()

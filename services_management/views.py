@@ -33,7 +33,8 @@ class FileUploadView(APIView):
                     account.avt = result['url']
                     account.save()
                     return Response({'message': 'Đổi ảnh đại diện thành công!'}, status=status.HTTP_202_ACCEPTED)
-            else:
+            elif type == 'products':
+
                 raise Exception("Chức năng này chưa được hoàn thiện!")
         except Exception as e:
             print(e)
