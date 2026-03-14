@@ -1,5 +1,6 @@
 
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from .models import UserAccounts
