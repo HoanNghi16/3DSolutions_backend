@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from users_management.authenticate import CookieAuthenticateJWT
-from .cloudinary_service import product_image_upload
-from .models import Products, Materials, Categories
+from services_management.cloudinary_service import upload_image
+from .models import Products, Materials, Categories, ProductImages
 from .pagination import ProductsPagination
 from .serializer import ProductsSerializer, ProductDetailsSerializer, MaterialsSerializer, ProductMaterialSerializer, \
     CategoriesSerializer
@@ -65,15 +65,24 @@ class AdminProduct(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAdminUser]
     def post(self, request):
-        print(request)
-        # try:
-        if not request.user.is_authenticated:
-            raise Exception('Vui lòng đăng nhập')
-        else:
-            images = request.data.get('images', None)
-            if images:
-                print(images)
-            return Response({'message': 'đã đăng nhập'}, status = status.HTTP_200_OK)
-        # except Exception as e:
-        #     print(str(e))
-        #     return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            if not request.user.is_authenticated:
+                raise Exception('Vui lòng đăng nhập')
+            else:
+                name = request.data.get('name', None)
+                price = request.data.get('price', None)
+                quantity = request.data.get('quantity', None)
+                description = request.data.get('description', None)
+                if Products.objects.filter(name=name).exists():
+                    raise Exception("Sản phẩm đã tồn tại!")
+                product = Products.objects.create(name=name, unit_price=price, quantity=quantity, description=description, rate= 0)
+                images = request.FILES.getlist('images[]')
+                if images:
+                    for count, image in enumerate( images):
+                        result = upload_image(image, 'products')
+                        is_thumbnail = True if count == 0 else False
+                        ProductImages.objects.create(product= product, fileID = result['public_id'], path = result['url'], type="img", is_thumbnail=is_thumbnail)
+                return Response({'message': 'đã đăng nhập'}, status = status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
