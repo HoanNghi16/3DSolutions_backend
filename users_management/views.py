@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AnonymousUser
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,11 +11,9 @@ from django.utils.decorators import method_decorator
 
 from carts_management.models import CartHeaders
 from .authenticate import CookieAuthenticateJWT
-from .serializer import UsersSerializer, UserAccountsSerializer
+from .serializer import UsersSerializer, UserAccountsSerializer, AccountsAdminSerializer
 from django.contrib.auth import authenticate
 from .models import UserAccounts, Address
-from rest_framework.permissions import AllowAny
-from users_management.models import Users
 
 class RegistrationView(APIView):
     def post(self, request):
@@ -99,4 +97,13 @@ class NewAddressView(APIView):
             print(e)
             return Response(data=f'{e}',status = status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+class UsersAdminView(APIView):
+    authentication_classes = [CookieAuthenticateJWT]
+    permission_classes = [IsAdminUser]
+    def get(self, request):
+        try:
+            users = UserAccounts.objects.all()
+            serializer = AccountsAdminSerializer(users, many=True)
+            return Response(data = serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(data = f'{e}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -118,3 +118,16 @@ class UserAccountsSerializer(serializers.ModelSerializer):
         header = CartHeaders.objects.get(account = obj)
         count = CartDetails.objects.filter(header = header).count()
         return count
+
+class AccountsAdminSerializer(serializers.ModelSerializer):
+    profile = UserInformationsSerializer(read_only=True)
+    last_login = serializers.SerializerMethodField()
+    class Meta:
+        model = UserAccounts
+        fields = ['email', 'avt', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff']
+    def get_last_login(self, obj):
+        ll = obj.last_login
+        if ll is None:
+            return None
+        return ll.strftime('%d/%m/%Y')
+

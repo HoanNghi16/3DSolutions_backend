@@ -20,10 +20,14 @@ class ProductMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Materials
         fields = ["name"]
-
+class AdminCateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categories
+        fields = ['id', 'name']
 class ProductsSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     material = ProductMaterialSerializer()
+    category = AdminCateSerializer(read_only=True)
     class Meta:
         model = Products
         fields = ["id", "name", "unit_price", "quantity", "thumbnail", "material", "category"]
@@ -33,6 +37,7 @@ class ProductsSerializer(serializers.ModelSerializer):
         if thumbnail:
             return thumbnail.path
         return None
+
 
 
 class MaterialsSerializer(serializers.ModelSerializer):

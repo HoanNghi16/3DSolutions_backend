@@ -23,6 +23,7 @@ class Products(models.Model):
     material = models.ForeignKey(Materials, related_name='products_material', on_delete=models.CASCADE)
     rate = models.FloatField(default =0)
     category = models.ForeignKey(Categories, on_delete=models.CASCADE, related_name='products_category', null=True)
+    disable = models.BooleanField(default=False)
 
     def __str__(self):
         return str({ id : self.id,'name' : self.name, 'description': self.description, 'unit_price': self.unit_price})
