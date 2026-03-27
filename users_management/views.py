@@ -1,3 +1,5 @@
+from datetime import timezone, datetime
+
 from django.contrib.auth.models import AnonymousUser
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
@@ -41,15 +43,15 @@ def get_token_for_user(user):
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     def post(self, request):
-        print(request.data)
         data = request.data
         user_authenticated = authenticate(request,email=data.get('email'), password=data.get('password'))
-        print(user_authenticated)
         if not user_authenticated:
             return Response(data = 'Invalid credentials ', status=status.HTTP_401_UNAUTHORIZED)
         try:
             user_get_token = UserAccounts.objects.get(email=data.get('email'))
             token_data = get_token_for_user(user_get_token)
+            user_get_token.last_login = datetime.now()
+            user_get_token.save()
             response = Response({'access': token_data['access'], 'refresh': token_data['refresh']}, status = status.HTTP_200_OK)
             return response
         except Exception as e:
@@ -67,7 +69,7 @@ class LogoutView(APIView):
         try:
             refresh = request.headers.get('refresh')
             token = RefreshToken(refresh)
-            #add token to blacklist (delete refresh token)
+            #add token to blacklist
             token.blacklist()
             response = Response({'message': 'success'}, status=status.HTTP_200_OK)
             response.delete_cookie(key = 'access')

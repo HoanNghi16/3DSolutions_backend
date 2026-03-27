@@ -37,12 +37,15 @@ class OrdersView(ListAPIView):
         else:
             orders = OrderHeaders.objects.filter(user=user).order_by('-date')
         return orders
+
 class OrderDetailsView(RetrieveAPIView):
     serializer_class = OrdersSerializer
     authentication_classes = [CookieAuthenticateJWT]
     lookup_field = 'id'
     def get_queryset(self):
         if self.request.user.is_authenticated:
+            if self.request.user.is_superuser:
+                return OrderHeaders.objects.all().order_by('-date')
             return OrderHeaders.objects.filter(user=self.request.user.profile).order_by('-date')
         else:
             return OrderHeaders.objects.filter(user=None).order_by('-date')
@@ -122,17 +125,15 @@ class OrderCancelView(APIView):
     permission_classes = [IsAuthenticated]
     def roll_back_quantity(self, order_id):
         try:
-            with transaction.atomic():
-                order = OrderHeaders.objects.get(id=order_id)
-                details = OrderDetails.objects.filter(header=order)
-                for detail in details:
-                    product = Products.objects.select_for_update().get(id=detail.product.id)
-                    product.quantity = F('quantity') + detail.quantity
-                    product.save()
-                return True
+            order = OrderHeaders.objects.get(id=order_id)
+            details = OrderDetails.objects.filter(header=order)
+            for detail in details:
+                product = Products.objects.select_for_update().get(id=detail.product.id)
+                product.quantity = F('quantity') + detail.quantity
+                product.save()
+            return True
         except Exception as e:
-            print(str(e))
-            return False
+            return e
 
     def post(self, request):
         try:
@@ -143,20 +144,24 @@ class OrderCancelView(APIView):
                 if order_id is None:
                     raise Exception('Không tồn tại đơn hàng')
                 user = request.user.profile
-                order = OrderHeaders.objects.get(user=user,id = order_id)
-                if order is None:
-                    raise Exception('Không tìm thấy đơn hàng')
                 if request.user.is_superuser:
+                    order = OrderHeaders.objects.get(id=order_id)
                     order.order_status= -1 #Đã hủy
                     order.save()
                     print(self.roll_back_quantity(order_id))
                     return Response({'message': 'Hủy đơn hàng thành công'}, status.HTTP_202_ACCEPTED)
+                else:
+                    order = OrderHeaders.objects.get(user=user, id=order_id)
+                if order is None:
+                    raise Exception('Không tìm thấy đơn hàng')
                 elif order.order_status == -1:
                     raise Exception('Đơn hàng đã hủy!')
                 elif order.order_status >= 2:
                     order.order_status = -2 #Đợi admin xác nhận
+                    order.save()
                 elif order.order_status in [0,1]:
                     order.order_status = -1 #đã hủy
+                    order.save()
                     print(self.roll_back_quantity(order_id))
                     return Response({'message': 'Hủy đơn hàng thành công!'}, status.HTTP_202_ACCEPTED)
                 else:
@@ -223,6 +228,22 @@ class OrderPreviewList(APIView):
 class AdminSummary(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAdminUser]
+    def get(self, request):
+        try:
+            if not request.user.is_superuser:
+                raise AuthenticationError("Bạn không có quyền sử dụng chức năng này!")
+            order_status = request.query_params.get('status', None)
+            print(self)
+            print(order_status)
+            if(order_status != "null"):
+                orders = OrderHeaders.objects.filter(order_status = order_status).order_by('-date')
+            else:
+                orders = OrderHeaders.objects.all().order_by('-date')
+            serializer = OrdersSerializer(orders, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     def post(self, request):
         try:
             if not request.user.is_authenticated:
