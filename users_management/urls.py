@@ -8,4 +8,5 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('address/', NewAddressView.as_view(), name='address'),
     path('admin_users/', UsersAdminView.as_view(), name='admin_users'),
+    path('admin_users/<uuid:id>',UsersAdminView.as_view(), name='admin_user'),
 ]

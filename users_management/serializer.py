@@ -14,13 +14,14 @@ class UsersSerializer:
         self.password = data.get("password")
         self.phone = data.get("phone")
         self.date_of_birth = data.get("date_of_birth")
-        self.valid_data = None
+        self.valid_data = {}
         self._error = None
 
-    def is_valid(self):
+
+    def is_valid(self, account):
         name = self.valid_name()
-        email = self.valid_email()
-        phone = self.valid_phone()
+        email = self.valid_email() if account.email != self.email else account.email
+        phone = self.valid_phone() if account.profile.phone != self.phone else account.profile.phone
         date_of_birth = self.valid_date_of_birth()
 
         if name and email and phone and date_of_birth:
@@ -34,35 +35,42 @@ class UsersSerializer:
             return False
 
     def valid_date_of_birth(self):
-        format_date = '%d/%m/%Y'
-        date_of_birth = datetime.strptime(self.date_of_birth, format_date).date()
-        today = date.today()
-        if(today.year - date_of_birth.year < 12):
-            return False
-        else:
-            return date_of_birth
+        if (self.date_of_birth):
+            format_date = '%d/%m/%Y'
+            date_of_birth = datetime.strptime(self.date_of_birth, format_date).date()
+            today = date.today()
+            if(today.year - date_of_birth.year < 12):
+                return False
+            else:
+                self.valid_data['date_of_birth'] = date_of_birth
+                return date_of_birth
+        return False
 
     def valid_phone(self):
         pattern = r'^0{1}[3-9]{1}\d{8,9}$'
         phone = str(self.phone)
         if(re.fullmatch(pattern, phone)):
             if (Users.objects.filter(phone=phone).exists()):
+                self._error = "Số điện thoại đã được sử dụng."
                 return False
+            self.valid_data = {'phone': phone}
             return phone
         else:
+            self._error = "Số điện thoại không hợp lệ"
             return False
 
     def valid_name(self):
         pattern = r'^[A-ZÀ-ỸĐ][a-zà-ỹđ]*\s([A-ZÀ-ỸĐ][a-zà-ỹđ]*)(\s[A-ZÀ-ỸĐ][a-zà-ỹđ]*)*$'
         name = self.name
         if(re.match(pattern, name)):
+            self.valid_data['name'] = name
             return name
         else: return False
 
     def valid_email(self):
         users = UserAccounts.objects.filter(email=self.email)
         if(users.exists()):
-            self._error  = "Account already exists"
+            self._error  = "Email đã tồn tại"
             return False
         else:
             return self.email
@@ -124,7 +132,7 @@ class AccountsAdminSerializer(serializers.ModelSerializer):
     last_login = serializers.SerializerMethodField()
     class Meta:
         model = UserAccounts
-        fields = ['email', 'avt', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff']
+        fields = ['id','email', 'avt', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff']
     def get_last_login(self, obj):
         ll = obj.last_login
         if ll is None:

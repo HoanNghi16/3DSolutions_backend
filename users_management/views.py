@@ -1,6 +1,8 @@
 from datetime import timezone, datetime
 
 from django.contrib.auth.models import AnonymousUser
+from django.db import transaction
+from django.utils.translation.trans_real import translation
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -15,7 +17,8 @@ from carts_management.models import CartHeaders
 from .authenticate import CookieAuthenticateJWT
 from .serializer import UsersSerializer, UserAccountsSerializer, AccountsAdminSerializer
 from django.contrib.auth import authenticate
-from .models import UserAccounts, Address
+from .models import UserAccounts, Address, Users
+
 
 class RegistrationView(APIView):
     def post(self, request):
@@ -105,7 +108,45 @@ class UsersAdminView(APIView):
     def get(self, request):
         try:
             users = UserAccounts.objects.all()
+            id = request.GET.get('id', None)
+            if id:
+                user = users.get(id = id)
+                serializer = AccountsAdminSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             serializer = AccountsAdminSerializer(users, many=True)
             return Response(data = serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(data = f'{e}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def put(self, request):
+        try:
+            with transaction.atomic():
+                id = request.data.get('id')
+                if id:
+                    accounts = UserAccounts.objects.select_for_update().filter(id=id)
+                    account = accounts.first()
+                    serializer = UsersSerializer(data=request.data)
+                    if serializer.is_valid(account):
+                        data = serializer.valid_data
+                        if account.is_superuser and account != request.user:
+                            return Response({'message': "Bạn không có quyền thay đổi thông tin của Admin khác"}, status=status.HTTP_403_FORBIDDEN)
+                        users = Users.objects.select_for_update().filter(user_id = account.profile_id)
+                        user = users.first()
+                        if account:
+                            account_data = {'email': data.get('email', account.email)}
+                            accounts.update(**account_data)
+                        if user:
+                            profile_data = {'name': data.get('name', user.name),
+                                            'phone': data.get('phone', user.phone),
+                                            'date_of_birth': data.get('date_of_birth', user.date_of_birth), }
+                            users.update(**profile_data)
+                        password = request.data.get('password', None)
+                        if password:
+                            account.set_password(password)
+                            account.save()
+                        return Response({'message': "Cập nhật thành công!"}, status=status.HTTP_200_OK)
+                    else:
+                        raise Exception(serializer._error)
+        except Exception as e:
+            print(e)
+            return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
