@@ -275,5 +275,19 @@ class AdminSummary(APIView):
             print(e)
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    def put(self, request):
+        try:
+            with transaction.atomic():
+                id = request.data.get('id', None)
+                if id:
+                    orders = OrderHeaders.objects.filter(id=id)
+                    order = orders.first()
+                    if order:
+                        if not request.user.is_superuser:
+                            raise AuthenticationError("Bạn không có quyền sử dụng chức năng này")
+                        
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 

@@ -57,3 +57,9 @@ class AdminSummarySerializer(serializers.ModelSerializer):
     class Meta:
         mmodel = OrderHeaders
         fields = ['total']
+
+
+class ValidOrderHeader:
+    def __init__(self, data):
+        self.receiver_name = data['receiver_name']
+        self.receiver_phone = data['receiver_phone']
