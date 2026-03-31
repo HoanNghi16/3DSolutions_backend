@@ -21,7 +21,7 @@ from users_management.authenticate import CookieAuthenticateJWT
 from users_management.models import Address
 from .data_processing import for_pie_chart, for_line_chart, for_bar_chart_1
 from .models import OrderHeaders, OrderDetails
-from .serializer import OrdersSerializer, OrderDetailsSerializer, OrdersListSerializer
+from .serializer import OrdersSerializer, OrderDetailsSerializer, OrdersListSerializer, ValidOrderHeader
 
 
 # Create your views here.
@@ -225,7 +225,7 @@ class OrderPreviewList(APIView):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminSummary(APIView):
+class AdminOrders(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAdminUser]
     def get(self, request):
@@ -277,15 +277,29 @@ class AdminSummary(APIView):
 
     def put(self, request):
         try:
-            with transaction.atomic():
-                id = request.data.get('id', None)
-                if id:
-                    orders = OrderHeaders.objects.filter(id=id)
+            if not request.user.is_superuser:
+                raise PermissionError("Bạn không có quyền sử dụng chức năng này")
+            order_id = request.data.get('order_id', None)
+            if order_id:
+                validator = ValidOrderHeader(request.data)
+                valid_data = validator.valid_data()
+                if validator.action and validator.action == "Cancel":
+                    return OrderCancelView().post(request)
+                with transaction.atomic():
+                    orders = OrderHeaders.objects.select_for_update().filter(id=order_id)
                     order = orders.first()
                     if order:
-                        if not request.user.is_superuser:
-                            raise AuthenticationError("Bạn không có quyền sử dụng chức năng này")
-                        
+                        for key,value in valid_data.items():
+                            setattr(order, key, value)
+                        order.save()
+                        return Response({'message': "Cập nhật thành công"}, status=status.HTTP_200_OK)
+                    raise FileNotFoundError("Đơn hàng không tồn tại")
+            else:
+                raise ValidationError("Dữ liệu không hợp lệ")
+        except PermissionError as e:
+                return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except FileNotFoundError as e:
+            return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
