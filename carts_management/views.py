@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.status import HTTP_200_OK
 
 from products_management.models import Products
@@ -26,12 +27,12 @@ class CartChangeView(APIView):
     def post(self, request):
         try:
             if not request.user.is_authenticated:
-                raise Exception('Vui lòng đăng nhập để sử dụng giỏ hàng!')
+                raise PermissionError('Vui lòng đăng nhập để sử dụng giỏ hàng!')
             product_id = request.data['product']
             quantity = request.data['quantity']
             product = Products.objects.get(id=product_id)
             if product.quantity == 0:
-                raise Exception('Sản phẩm đã hết hàng!')
+                raise ValidationError('Sản phẩm đã hết hàng!')
             cart_header = CartHeaders.objects.get(account = request.user)
 
             cart_details = CartDetails.objects.filter(header = cart_header, product = product).first()
@@ -46,6 +47,10 @@ class CartChangeView(APIView):
 
             cart_count = len(CartDetails.objects.filter(header = cart_header))
             return Response({'cart_count': cart_count, 'message': 'Đã thêm vào giỏ hàng'},status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except PermissionError as e:
+            return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
 
@@ -58,19 +63,23 @@ class CartChangeView(APIView):
             quantity = int(request.data['quantity'])
             product = Products.objects.get(id = request.data['product'])
             if quantity <= 0:
-                raise Exception('Số lượng sản phẩm phải lớn hơn 0!')
+                raise ValidationError('Số lượng sản phẩm phải lớn hơn 0!')
             if(quantity > product.quantity):
-                raise Exception('Sản phẩm không đủ!')
+                raise ValidationError('Sản phẩm không đủ!')
             detail_id = request.data['detail']
             cart_header = CartHeaders.objects.get(account = user)
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             if not detail:
-                raise Exception("Vui lòng thêm sản phẩm vào giỏ hàng!")
+                raise FileNotFoundError("Vui lòng thêm sản phẩm vào giỏ hàng!")
             detail.quantity = quantity
             detail.save()
             return Response(status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except FileNotFoundError as e:
+            return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request):
         if (not request.user.is_authenticated):
@@ -78,12 +87,13 @@ class CartChangeView(APIView):
         try:
             cart_header = CartHeaders.objects.get(account = request.user)
             if not cart_header:
-                raise Exception("Không tìm thấy giỏ hàng!")
+                raise FileNotFoundError("Không tìm thấy giỏ hàng!")
             detail_id = request.data['detail']
             detail = CartDetails.objects.get(id = detail_id, header= cart_header)
             detail.delete()
             cart_count = len(CartDetails.objects.filter(header=cart_header))
-            print(cart_count)
             return Response({'cart_count': cart_count, 'message': 'Đã xóa khỏi giỏ hàng!'},status=HTTP_200_OK)
+        except FileNotFoundError as e:
+            return Response({'message': str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)

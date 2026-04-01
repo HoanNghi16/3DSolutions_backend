@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta
 from multiprocessing.context import AuthenticationError
 
@@ -174,6 +173,7 @@ class OrderPreviewList(APIView):
         if product.quantity == 0:
             raise Exception('Sản phẩm đã hết hàng!')
         return quantity <= product.quantity
+    #Tạo order
     def post(self, request):
         try:
             mode = request.data['mode']
@@ -233,8 +233,6 @@ class AdminOrders(APIView):
             if not request.user.is_superuser:
                 raise AuthenticationError("Bạn không có quyền sử dụng chức năng này!")
             order_status = request.query_params.get('status', None)
-            print(self)
-            print(order_status)
             if(order_status != "null"):
                 orders = OrderHeaders.objects.filter(order_status = order_status).order_by('-date')
             else:
@@ -259,7 +257,8 @@ class AdminOrders(APIView):
             order_status = []
             for order in orders:
                 order_status.append(order['order_status'])
-                if order['order_status'] in [-1, '-1']:
+                if order['order_status'] ==-1 or order['order_status'] == -2:
+                    print('hủy r')
                     continue
                 total += order['total']
                 product_count += order['product_count']

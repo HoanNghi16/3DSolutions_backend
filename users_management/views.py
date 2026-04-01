@@ -82,9 +82,25 @@ class LogoutView(APIView):
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class NewAddressView(APIView):
+class AddressView(APIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAuthenticated]
+    # Xóa địa chỉ
+    def delete(self, request):
+        try:
+            with transaction.atomic():
+                id = request.data.get('id')
+                address = Address.objects.get(id = id)
+                if address:
+                    address.delete()
+                    return Response({'message': 'Xóa địa chỉ thành công'}, status=status.HTTP_200_OK)
+                else:
+                    raise FileNotFoundError("Không tìm thấy địa chỉ")
+        except FileNotFoundError as e:
+            return Response(data = str(e), status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response(data = str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request):
         try:
             if request.data:
