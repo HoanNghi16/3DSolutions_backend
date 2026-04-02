@@ -44,15 +44,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "https://3d-solutions.vercel.app",
 ]
-if DEBUG:
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-else:
-    SESSION_COOKIE_SAMESITE = 'None'
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = 'None'
-    CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'lax'
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # Application definition
 
@@ -107,6 +101,7 @@ REST_FRAMEWORK = {
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    'https://3d-solutions.vercel.app',
 ]
 
 # Quan trọng khi chạy localhost khác port
