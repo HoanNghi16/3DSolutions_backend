@@ -107,6 +107,7 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserInformationsSerializer(serializers.ModelSerializer):
+    print('serr')
     address = AddressSerializer(many=True)
     date_of_birth = serializers.SerializerMethodField()
     class Meta:
@@ -122,10 +123,11 @@ class UserAccountsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAccounts
         fields = ['id', 'avt', 'email', 'profile', 'last_login', 'is_active', 'is_superuser', 'is_staff', 'cart_count']
+
     def get_cart_count(self,obj):
         header = CartHeaders.objects.get(account = obj)
         count = CartDetails.objects.filter(header = header).count()
-        return count
+        return count if count else 0
 
 class AccountsAdminSerializer(serializers.ModelSerializer):
     profile = UserInformationsSerializer(read_only=True)

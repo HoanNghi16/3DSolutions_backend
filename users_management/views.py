@@ -19,9 +19,10 @@ from .serializer import UsersSerializer, UserAccountsSerializer, AccountsAdminSe
 from django.contrib.auth import authenticate
 from .models import UserAccounts, Address, Users
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class RegistrationView(APIView):
     def post(self, request):
+        print(request.data)
         serializer = UsersSerializer(data=request.data)
         if not serializer.is_valid():
             print(serializer._error)
@@ -33,9 +34,10 @@ class RegistrationView(APIView):
                 new_cart = CartHeaders.objects.create(account = new_account)
                 new_cart.save()
                 print(new_cart)
-            return Response(data = f'account created', status=status.HTTP_201_CREATED)
+            return Response(data = {'message':'account created'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(str(e))
+            return Response(data = {'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def get_token_for_user(user, refresh_str):
     refresh = RefreshToken.for_user(user) if not refresh_str else RefreshToken(refresh_str)
@@ -67,6 +69,8 @@ class UserInformationView(RetrieveAPIView):
     authentication_classes = [CookieAuthenticateJWT]
     permission_classes = [IsAuthenticated]
     def get_object(self):
+        print(self.request.user.is_authenticated)
+        print("toi day")
         return self.request.user
 
 class LogoutView(APIView):
