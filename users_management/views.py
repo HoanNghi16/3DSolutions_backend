@@ -37,27 +37,30 @@ class RegistrationView(APIView):
         except Exception as e:
             return Response(data = f'{e.args}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-def get_token_for_user(user):
-    refresh = RefreshToken.for_user(user)
+def get_token_for_user(user, refresh_str):
+    refresh = RefreshToken.for_user(user) if not refresh_str else RefreshToken(refresh_str)
     return {
         'refresh': str(refresh),
         'access': str(refresh.access_token)
     }
+
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     def post(self, request):
         data = request.data
-        user_authenticated = authenticate(request,email=data.get('email'), password=data.get('password'))
+        user_authenticated = request.user if request.user.is_authenticated else authenticate(request,email=data.get('email'), password=data.get('password'))
         if not user_authenticated:
             return Response(data = 'Invalid credentials ', status=status.HTTP_401_UNAUTHORIZED)
         try:
             user_get_token = UserAccounts.objects.get(email=data.get('email'))
-            token_data = get_token_for_user(user_get_token)
+            print(request.COOKIES)
+            token_data = get_token_for_user(user_get_token, None) if not request.COOKIES['refresh'] else get_token_for_user(user_get_token, data.get('refresh_str'))
             user_get_token.last_login = datetime.now()
             user_get_token.save()
             response = Response({'access': token_data['access'], 'refresh': token_data['refresh']}, status = status.HTTP_200_OK)
             return response
         except Exception as e:
+            print(e)
             return Response(data = 'Token Error' + f'{e.args}' + f'{user_authenticated}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserInformationView(RetrieveAPIView):
