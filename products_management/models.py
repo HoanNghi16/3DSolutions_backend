@@ -31,7 +31,7 @@ class Products(models.Model):
 class ProductImages(models.Model):
     product = models.ForeignKey(Products, on_delete=models.CASCADE, related_name='images')
     fileID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    path = models.CharField(unique=False)
+    path = models.CharField(unique=False, max_length=300)
     is_thumbnail = models.BooleanField(default=False)
     type = models.CharField(max_length=100)
 

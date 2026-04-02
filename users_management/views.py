@@ -50,11 +50,10 @@ class LoginView(APIView):
         data = request.data
         user_authenticated = request.user if request.user.is_authenticated else authenticate(request,email=data.get('email'), password=data.get('password'))
         if not user_authenticated:
-            return Response(data = 'Invalid credentials ', status=status.HTTP_401_UNAUTHORIZED)
+            return Response(data = 'Thông tin sai! ', status=status.HTTP_401_UNAUTHORIZED)
         try:
             user_get_token = UserAccounts.objects.get(email=data.get('email'))
-            print(request.COOKIES)
-            token_data = get_token_for_user(user_get_token, None) if not request.COOKIES['refresh'] else get_token_for_user(user_get_token, data.get('refresh_str'))
+            token_data = get_token_for_user(user_get_token, None) if not request.COOKIES.get('refresh', None) else get_token_for_user(user_get_token, data.get('refresh_str'))
             user_get_token.last_login = datetime.now()
             user_get_token.save()
             response = Response({'access': token_data['access'], 'refresh': token_data['refresh']}, status = status.HTTP_200_OK)

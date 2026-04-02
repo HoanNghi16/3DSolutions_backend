@@ -27,7 +27,7 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', False).lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 cloudinary.config(
     cloud_name=os.environ.get('CLOUD_NAME'),
@@ -38,7 +38,7 @@ cloudinary.config(
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'threedsolutions-backend.onrender.com']
+    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'threedsolutions-backend.onrender.com', "localhost"]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
