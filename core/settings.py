@@ -37,7 +37,7 @@ cloudinary.config(
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'https://threedsolutions-backend.onrender.com/']
+    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'threedsolutions-backend.onrender.com/']
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
