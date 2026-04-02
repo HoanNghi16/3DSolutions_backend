@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import timedelta
 import cloudinary
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +27,7 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', False).lower() == 'true'
 
 cloudinary.config(
     cloud_name=os.environ.get('CLOUD_NAME'),
@@ -37,7 +38,7 @@ cloudinary.config(
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'threedsolutions-backend.onrender.com/']
+    ALLOWED_HOSTS = ['3d-solutions.vercel.app', '127.0.0.1', 'threedsolutions-backend.onrender.com']
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
@@ -134,17 +135,23 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE'),
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT' : os.environ.get('DB_PORT')
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ.get('DB_ENGINE'),
+            'NAME': os.environ.get('DB_NAME'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST'),
+            'PORT': os.environ.get('DB_PORT'),
+        }
     }
-}
-
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get("DATABASE_URL")
+        )
+    }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
