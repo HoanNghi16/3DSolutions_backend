@@ -22,21 +22,16 @@ from .models import UserAccounts, Address, Users
 @method_decorator(csrf_exempt, name='dispatch')
 class RegistrationView(APIView):
     def post(self, request):
-        print(request.data)
         serializer = UsersSerializer(data=request.data)
-        if not serializer.is_valid():
-            print(serializer._error)
-            return Response(serializer._error, status=status.HTTP_409_CONFLICT)
+        if not serializer.is_valid(account=None):
+            return Response({'message':serializer._error}, status=status.HTTP_409_CONFLICT)
         try:
             new_account = serializer.create()
-            print(new_account)
             if new_account:
                 new_cart = CartHeaders.objects.create(account = new_account)
                 new_cart.save()
-                print(new_cart)
-            return Response(data = {'message':'account created'}, status=status.HTTP_201_CREATED)
+            return Response(data = {'message':'Đăng ký thành công'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            print(str(e))
             return Response(data = {'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def get_token_for_user(user, refresh_str):

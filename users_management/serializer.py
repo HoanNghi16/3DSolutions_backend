@@ -20,10 +20,9 @@ class UsersSerializer:
 
     def is_valid(self, account):
         name = self.valid_name()
-        email = self.valid_email() if account.email != self.email else account.email
-        phone = self.valid_phone() if account.profile.phone != self.phone else account.profile.phone
+        email = self.valid_email() if not account or account.email != self.email else account.email
+        phone = self.valid_phone() if not account or account.profile.phone != self.phone else account.profile.phone
         date_of_birth = self.valid_date_of_birth()
-
         if name and email and phone and date_of_birth:
             self.valid_data = {'email': email,
                                'name': name,
@@ -85,7 +84,7 @@ class UsersSerializer:
             return False
 
     def create(self):
-        if(self.is_valid()):
+        if(self.is_valid(account=None)):
             valid_data = self.valid_data
             if (self.check_exist()):
                 profile =  Users.objects.get(name= valid_data.get('name'), phone = valid_data.get('phone'), date_of_birth= valid_data.get('date_of_birth'))
@@ -96,7 +95,7 @@ class UsersSerializer:
                 profile = Users.objects.create(**profile_data)
             useraccount = UserAccounts.objects.create_user(profile = profile, **account_data)
             return useraccount
-        self._error = 'Invalid data'
+        self._error = 'Dữ liệu không hợp lệ'
         return None
     def __str__(self):
         return str(self.valid_data)
