@@ -48,9 +48,10 @@ class CartChangeView(APIView):
             cart_count = len(CartDetails.objects.filter(header = cart_header))
             return Response({'cart_count': cart_count, 'message': 'Đã thêm vào giỏ hàng'},status=status.HTTP_200_OK)
         except ValidationError as e:
-            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            print(e.args)
+            return Response({'message': str(e.args[0])}, status=status.HTTP_400_BAD_REQUEST)
         except PermissionError as e:
-            return Response({'message': str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'message': str(e.args[0])}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({'message': str(e)},status=status.HTTP_400_BAD_REQUEST)
 
